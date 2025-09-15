@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swim Team Search: US Map</title>
+    <style>
+        body {
+            font-family: Helvetica, sans-serif;
+            line-height: 1.4;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 875px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-family: Arial, sans-serif;
+            color: #133b66;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+        }
+        p {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        /* SVG Map Container Styling */
+        #us-map-object-container {
+            width: 850px;
+            height: auto;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        #us-map-object-container object {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 1. Base style for ALL paths (default, unvisited, not hovered) */
+        #us-map-svg path {
+            fill: #5c9ad5 !important;
+            stroke: #fff !important;
+            stroke-width: 2px !important;
+            cursor: default;
+            transition: fill 0.2s ease-in-out;
+        }
+
+        /* 2. Style for states that HAVE teams (visited) - more specific than 'path' */
+        #us-map-svg path.visited {
+            fill: #133b66 !important; /* Your main color */
+            cursor: pointer !important; /* Make visited states clearly clickable */
+        }
+
+        /* 3. Hover effect for ALL paths - this must come LAST to override base and visited fill */
+        #us-map-svg path:hover {
+            fill: #2d7cbc !important;
+            cursor: pointer !important;
+        }
+
+        .map-note {
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Find Swim Teams Across the US!</h1>
+        <p>Click on a state to view a list of teams.</p>
+
+        <div id="us-map-object-container">
+            <object id="usMapSvgObject" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
+        </div>
+        <p class="map-note">States are clickable if teams are located there.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const usMapSvgObject = document.getElementById('usMapSvgObject');
+            
+            usMapSvgObject.addEventListener('load', function() {
+                try {
+                    let usMapSvg = usMapSvgObject.contentDocument.getElementById('us-map-svg');
+
+                    if (!usMapSvg) {
+                        if (usMapSvgObject.contentDocument && usMapSvgObject.contentDocument.documentElement && usMapSvgObject.contentDocument.documentElement.tagName === 'svg') {
+                            usMapSvg = usMapSvgObject.contentDocument.documentElement;
+                            usMapSvg.id = 'us-map-svg';
+                        } else {
+                            console.error("Error: Map SVG structure invalid.");
+                            return;
+                        }
+                    }
+
+                    if (usMapSvg) {
+                        const indexJsonUrl = 'teams_index.json';
+
+                        fetch(indexJsonUrl)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                const allTeamsData = data.values || []; // Using your JSON format
+                                const visitedStates = new Set();
+                                allTeamsData.forEach(team => {
+                                    if (team[9]) { // index 9 is address_state
+                                        visitedStates.add(team[9].toUpperCase());
+                                    }
+                                });
+
+                                const statePaths = usMapSvg.querySelectorAll('path');
+                                statePaths.forEach(path => {
+                                    let stateCode = path.id ? path.id.toUpperCase() : null;
+                                    if (!stateCode && path.classList.length > 0) {
+                                        stateCode = path.classList[0].toUpperCase();
+                                        path.id = stateCode;
+                                    }
+                                    
+                                    path.classList.add('state-path');
+                                    if (stateCode && visitedStates.has(stateCode)) {
+                                        path.classList.add('visited');
+                                        path.addEventListener('click', function() {
+                                            window.location.href = `teams.html?state=${stateCode}`;
+                                        });
+                                    } else {
+                                        path.style.opacity = '0.7';
+                                    }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error fetching the teams index for map:', error);
+                            });
+                    }
+                } catch (e) {
+                    console.error("Failed to access SVG content:", e);
+                }
+            }, false);
+
+            usMapSvgObject.addEventListener('error', function() {
+                console.error("Error loading SVG file via <object> tag. Check file path and existence.");
+            });
+        });
+    </script>
+</body>
+</html>
