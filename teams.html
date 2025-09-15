@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Swim Teams</title>
+    <style>
+        body {
+            font-family: Helvetica, sans-serif;
+            line-height: 1.4;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-family: Arial, sans-serif;
+            color: #133b66;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+        h2 {
+            font-family: Arial, sans-serif;
+            color: #2d7cbc;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            font-size: 1.2em;
+        }
+        .navbar {
+            background-color: #133b66;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            font-family: Arial, sans-serif;
+            font-size: 1.1em;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .navbar a:hover {
+            background-color: #2d7cbc;
+            text-decoration: none;
+        }
+        .map-container {
+            /* This will be hidden since the map won't work with the current data */
+            display: none;
+            overflow: hidden;
+            height: 400px;
+            position: relative;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .map-container iframe {
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            border: 0;
+        }
+        .team-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .team-list li {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+        }
+        .team-list li a {
+            font-weight: bold;
+            color: #133b66;
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+        .team-list li a:hover {
+            text-decoration: underline;
+        }
+        .team-list li p {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="stateNameHeading">Loading State Teams...</h1>
+
+        <div class="navbar">
+            <a href="index.html">Return to US Map</a>
+        </div>
+
+        <h2>Map of Teams (Not Available)</h2>
+        <div id="stateMapContainer" class="map-container">
+            <iframe id="stateMapIframe" frameborder="0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+        </div>
+
+        <h2>Teams in This State</h2>
+        <div id="teamsList" class="team-list">
+            <ul>
+                <li>No teams found for this state.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const getQueryParameter = (name) => {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(name);
+            };
+
+            // CHANGE: The URL for fetching your JSON data
+            const teamsJsonUrl = 'MeganTeamLocations.json';
+            const stateCode = getQueryParameter('state');
+
+            if (!stateCode) {
+                document.getElementById('stateNameHeading').textContent = "Error: State code not specified in URL.";
+                console.error("No 'state' query parameter found in the URL.");
+                return;
+            }
+
+            fetch(teamsJsonUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // CHANGE: Accessing the 'values' array from your JSON
+                    const allTeamsData = data.values || [];
+                    
+                    // CHANGE: Filtering teams based on the state code
+                    // Your JSON has the state code at index 9 and can be a full name like 'Alabama' or an abbreviation 'AL'
+                    const teamsInState = allTeamsData.filter(team => {
+                        const teamState = team[9] ? team[9].toUpperCase() : '';
+                        const teamStateFull = teamStateToFullName(teamState);
+                        const stateCodeUpper = stateCode.toUpperCase();
+                        
+                        return teamState === stateCodeUpper || teamStateFull === stateCodeUpper;
+                    });
+
+                    // Sort the list alphabetically by city (address_city is at index 8)
+                    teamsInState.sort((a, b) => {
+                        const cityA = a[8].toUpperCase();
+                        const cityB = b[8].toUpperCase();
+                        if (cityA < cityB) return -1;
+                        if (cityA > cityB) return 1;
+                        return 0;
+                    });
+
+                    if (teamsInState.length > 0) {
+                        // CHANGE: The heading will now use the state abbreviation from the URL, or the full name if we can find one
+                        const firstTeamState = teamsInState[0][9];
+                        const displayStateName = stateCodeToFullName(stateCode) || firstTeamState || stateCode.toUpperCase();
+                        document.getElementById('stateNameHeading').textContent = `${displayStateName} Teams`;
+
+                        // Populate List of Teams
+                        // CHANGE: Updated the list container ID
+                        const teamsListUl = document.querySelector('#teamsList ul');
+                        teamsListUl.innerHTML = '';
+
+                        teamsInState.forEach(team => {
+                            const li = document.createElement('li');
+                            const link = document.createElement('a');
+                            
+                            // team name is at index 2, city at index 8, URL at index 11
+                            link.href = team[11] || '#';
+                            link.textContent = `${team[2]} (${team[8]})`;
+                            
+                            li.appendChild(link);
+                            teamsListUl.appendChild(li);
+                        });
+                    } else {
+                        document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
+                        document.querySelector('#teamsList ul').innerHTML = `<li>No teams available for ${stateCode.toUpperCase()} yet.</li>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching the teams data:', error);
+                    document.getElementById('stateNameHeading').textContent = "Failed to load state teams.";
+                    document.querySelector('#teamsList ul').innerHTML = `<li>Error loading teams. Please try again later.</li>`;
+                });
+
+            // Helper function to convert state code to full name
+            function stateCodeToFullName(code) {
+                const states = {
+                    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+                };
+                return states[code] || null;
+            }
+
+            // Helper function to convert state full name to code
+            function stateFullNameToCode(name) {
+                const states = {
+                    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC', 'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD', 'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT', 'Virginia': 'VA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
+                };
+                return states[name] || null;
+            }
+        });
+    </script>
+</body>
+</html>
