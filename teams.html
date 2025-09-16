@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>State Swim Teams</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHnZAqLAKeGZ0Xn+KFxJ/oJ/mZ6g="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20+68dM4f50l4M+x+i+g183+K/c+g4+D/e+i5="
+            crossorigin=""></script>
+
     <style>
         body {
             font-family: Helvetica, sans-serif;
@@ -57,7 +65,6 @@
             text-decoration: none;
         }
         .map-container {
-            overflow: hidden;
             height: 400px;
             position: relative;
             margin-top: 15px;
@@ -65,13 +72,10 @@
             border-radius: 8px;
             border: 1px solid #eee;
         }
-        .map-container iframe {
-            left: 0;
-            top: 0;
+        /* The map div must have a defined height */
+        #team-map {
             height: 100%;
             width: 100%;
-            position: absolute;
-            border: 0;
         }
         .team-list ul {
             list-style-type: none;
@@ -109,7 +113,7 @@
         </div>
         <h2>Map of Teams</h2>
         <div id="stateMapContainer" class="map-container">
-            <iframe id="stateMapIframe" frameborder="0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+            <div id="team-map"></div>
         </div>
         <h2>Teams in This State</h2>
         <div id="teamsList" class="team-list">
@@ -139,7 +143,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    // CORRECTED: data is the array itself, so we slice it directly.
                     const allTeamsData = data.slice(1);
                     const teamsInState = allTeamsData.filter(team => {
                         const teamState = team[8] ? team[8].toUpperCase() : '';
@@ -148,7 +151,7 @@
                         return teamState === stateCodeUpper;
                     });
                     teamsInState.sort((a, b) => {
-                        const cityA = a[8].toUpperCase(); // City is at index 8
+                        const cityA = a[8].toUpperCase();
                         const cityB = b[8].toUpperCase();
                         if (cityA < cityB) return -1;
                         if (cityA > cityB) return 1;
@@ -156,32 +159,34 @@
                     });
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
-                        const stateMapIframe = document.getElementById('stateMapIframe');
-                        let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+                        
+                        // NEW MAP LOGIC WITH LEAFLET.JS
+                        const map = L.map('team-map');
+                        const teamMarkers = L.featureGroup();
+
                         teamsInState.forEach(team => {
-                            const lat = parseFloat(team[11]); // Latitude is at index 11
-                            const lon = parseFloat(team[12]); // Longitude is at index 12
+                            const lat = parseFloat(team[11]);
+                            const lon = parseFloat(team[12]);
                             if (!isNaN(lat) && !isNaN(lon)) {
-                                minLat = Math.min(minLat, lat);
-                                maxLat = Math.max(maxLat, lat);
-                                minLon = Math.min(minLon, lon);
-                                maxLon = Math.max(maxLon, lon);
+                                const marker = L.marker([lat, lon]);
+                                marker.bindPopup(`${team[2]}<br>Type: ${team[3]}`);
+                                teamMarkers.addLayer(marker);
                             }
                         });
-                        const latBuffer = (maxLat - minLat) * 0.2 || 0.5;
-                        const lonBuffer = (maxLon - minLon) * 0.2 || 0.5;
-                        if (isFinite(minLat) && isFinite(minLon)) {
-                            let markers = '';
-                            teamsInState.forEach(team => {
-                                const lat = parseFloat(team[11]);
-                                const lon = parseFloat(team[12]);
-                                if (!isNaN(lat) && !isNaN(lon)) {
-                                    markers += `&marker=${lat},${lon}`;
-                                }
-                            });
-                            const bbox = `${minLon - lonBuffer},${minLat - latBuffer},${maxLon + lonBuffer},${maxLat + latBuffer}`;
-                            stateMapIframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}${markers}&layer=mapnik`;
-                        }
+                        
+                        // Add OpenStreetMap tiles to the map
+                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        }).addTo(map);
+
+                        // Add all markers to the map
+                        teamMarkers.addTo(map);
+                        
+                        // Fit the map view to show all markers
+                        map.fitBounds(teamMarkers.getBounds());
+
+                        // Populate the list of teams
                         const teamsListUl = document.querySelector('#teamsList ul');
                         teamsListUl.innerHTML = '';
                         teamsInState.forEach(team => {
