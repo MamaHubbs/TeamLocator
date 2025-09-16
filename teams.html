@@ -106,6 +106,23 @@
         tr:hover {
             background-color: #e9e9e9;
         }
+
+        /* NEW: Custom marker styling */
+        .custom-marker {
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+            font-size: 18px;
+            color: #fff;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            font-family: 'Arial Black', sans-serif;
+        }
+        .custom-marker.star {
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
@@ -155,6 +172,58 @@
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
 
+            // Cache for league colors
+            const leagueColors = {};
+            const orgTypeColors = {
+                'Year Round Club Team': '#3498db',
+                'Summer/Rec League': '#e74c3c',
+                'Recreational Summer Team': '#2ecc71',
+                'High School Team': '#f1c40f',
+                'Other': '#95a5a6'
+            };
+
+            // Function to generate a consistent color for a given string
+            const getLeagueColor = (leagueName) => {
+                if (leagueColors[leagueName]) {
+                    return leagueColors[leagueName];
+                }
+                let hash = 0;
+                for (let i = 0; i < leagueName.length; i++) {
+                    hash = leagueName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                let color = '#';
+                for (let i = 0; i < 3; i++) {
+                    const value = (hash >> (i * 8)) & 0xFF;
+                    color += ('00' + value.toString(16)).substr(-2);
+                }
+                leagueColors[leagueName] = color;
+                return color;
+            };
+
+            // Function to create a custom marker icon
+            const createTeamIcon = (team) => {
+                const is100SwimTopia = team['100% SwimTopia'];
+                const orgType = team['Organization Type'];
+                const leagueName = team['League Name'];
+                
+                let iconContent = is100SwimTopia ? '★' : '•';
+                
+                let markerColor;
+                if (leagueName) {
+                    markerColor = getLeagueColor(leagueName);
+                } else {
+                    markerColor = orgTypeColors[orgType] || orgTypeColors['Other'];
+                }
+
+                return L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}">${iconContent}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                    popupAnchor: [0, -12]
+                });
+            };
+
             if (!stateCode) {
                 document.getElementById('stateNameHeading').textContent = "Error: State code not specified in URL.";
                 console.error("No 'state' query parameter found in the URL.");
@@ -169,8 +238,8 @@
                     return response.json();
                 })
                 .then(data => {
-                    // CORRECTED: data is now an array of objects
-                    let allTeamsData = data || [];
+                    // Correctly process the data which is a list of objects
+                    const allTeamsData = data || [];
                     let teamsInState = allTeamsData.filter(team => {
                         return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
                     });
@@ -185,8 +254,9 @@
                             const lat = parseFloat(team.Latitude);
                             const lon = parseFloat(team.Longitude);
                             if (!isNaN(lat) && !isNaN(lon)) {
-                                const marker = L.marker([lat, lon]);
-                                marker.bindPopup(`${team.Name}<br>Type: ${team.Organization Type}`);
+                                const customIcon = createTeamIcon(team);
+                                const marker = L.marker([lat, lon], {icon: customIcon});
+                                marker.bindPopup(`${team.Name}<br>Type: ${team['Organization Type']}`);
                                 teamMarkers.addLayer(marker);
                             }
                         });
@@ -223,10 +293,10 @@
                         
                         // Initial sort by Zip Code, then Name
                         teamsInState.sort((a, b) => {
-                            const zipA = a['Zip Code'].toLowerCase();
-                            const zipB = b['Zip Code'].toLowerCase();
-                            const nameA = a.Name.toLowerCase();
-                            const nameB = b.Name.toLowerCase();
+                            const zipA = String(a['Zip Code']).toLowerCase();
+                            const zipB = String(b['Zip Code']).toLowerCase();
+                            const nameA = String(a.Name).toLowerCase();
+                            const nameB = String(b.Name).toLowerCase();
                             
                             if (zipA === zipB) {
                                 return nameA.localeCompare(nameB);
