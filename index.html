@@ -106,7 +106,7 @@
                     }
 
                     if (usMapSvg) {
-                        const indexJsonUrl = 'teams_index.json';
+                        const indexJsonUrl = 'team_locations.json';
 
                         fetch(indexJsonUrl)
                             .then(response => {
@@ -116,11 +116,12 @@
                                 return response.json();
                             })
                             .then(data => {
-                                const allTeamsData = data.values || []; // Using your JSON format
+                                const allTeamsData = data.values ? data.values.slice(1) : [];
                                 const visitedStates = new Set();
+                                
                                 allTeamsData.forEach(team => {
-                                    if (team[9]) { // index 9 is address_state
-                                        visitedStates.add(team[9].toUpperCase());
+                                    if (team[8]) {
+                                        visitedStates.add(team[8].toUpperCase());
                                     }
                                 });
 
