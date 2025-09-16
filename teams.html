@@ -147,7 +147,7 @@
                         return teamState === stateCodeUpper;
                     });
                     teamsInState.sort((a, b) => {
-                        const cityA = a[8].toUpperCase();
+                        const cityA = a[8].toUpperCase(); // City is at index 8
                         const cityB = b[8].toUpperCase();
                         if (cityA < cityB) return -1;
                         if (cityA > cityB) return 1;
@@ -158,8 +158,8 @@
                         const stateMapIframe = document.getElementById('stateMapIframe');
                         let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
                         teamsInState.forEach(team => {
-                            const lat = parseFloat(team[11]);
-                            const lon = parseFloat(team[12]);
+                            const lat = parseFloat(team[11]); // Latitude is at index 11
+                            const lon = parseFloat(team[12]); // Longitude is at index 12
                             if (!isNaN(lat) && !isNaN(lon)) {
                                 minLat = Math.min(minLat, lat);
                                 maxLat = Math.max(maxLat, lat);
@@ -185,16 +185,15 @@
                         teamsListUl.innerHTML = '';
                         teamsInState.forEach(team => {
                             const li = document.createElement('li');
-                            const teamName = team[2];
-                            const teamCity = team[8];
-                            const teamUrl = team[10];
-                            const orgType = team[3];
+                            const teamName = team[2]; // Team Name is at index 2
+                            const teamCity = team[8]; // City is at index 8
+                            const teamUrl = team[10]; // Panel URL is at index 10
+                            const orgType = team[3];  // Organization Type is at index 3
                             const link = document.createElement('a');
                             link.href = teamUrl || '#';
                             link.textContent = `${teamName} (${teamCity})`;
                             li.appendChild(link);
                             const typeP = document.createElement('p');
-                            // CORRECTED: Use the organization type directly from the data (index 3)
                             typeP.textContent = `Type: ${orgType}`;
                             li.appendChild(typeP);
                             teamsListUl.appendChild(li);
