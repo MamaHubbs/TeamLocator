@@ -155,7 +155,7 @@
 
         /* Styling for 100% SwimTopia teams/leagues */
         .st-highlight-text {
-            color: #006400; /* Dark green */
+            color: #0d47a0; /* CHANGED: Dark Blue */
         }
         .st-normal-text {
             color: #666; /* Grey for normal text */
@@ -491,9 +491,8 @@
                     
                     // Identify 100% SwimTopia leagues from the entire dataset
                     swimtopiaLeagues = new Set(allTeamsData
-                        .filter(team => team['100% SwimTopia'])
+                        .filter(team => team['100% SwimTopia'] === true && team['League Name'])
                         .map(team => team['League Name'])
-                        .filter(Boolean)
                     );
 
                     teamsInState = allTeamsData.filter(team => {
