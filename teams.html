@@ -93,12 +93,14 @@
             cursor: pointer;
             position: sticky;
             top: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
         th:hover {
             background-color: #2d7cbc;
+        }
+        th .header-content { /* NEW: Style for the inner flex container */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         th span.arrow {
             margin-left: 5px;
@@ -141,33 +143,6 @@
             margin-top: -15px;
             margin-bottom: 15px;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .legend-color-box {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
-            border: 2px solid white;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-        .legend-shape {
-            font-size: 24px;
-            margin-right: 10px;
-        }
-        .legend-list {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .legend-list li {
-            margin: 0 10px 10px 0;
-        }
     </style>
 </head>
 <body>
@@ -180,20 +155,6 @@
         <div id="stateMapContainer" class="map-container">
             <div id="team-map"></div>
         </div>
-        
-        <h2>Map Key</h2>
-        <div id="mapLegend">
-            <h4>100% SwimTopia Status</h4>
-            <ul class="legend-list">
-                <li class="legend-item"><span class="legend-shape">★</span> 100% SwimTopia Team</li>
-                <li class="legend-item"><span class="legend-shape">•</span> Not 100% SwimTopia</li>
-            </ul>
-
-            <h4>League/Organization Colors</h4>
-            <ul class="legend-list" id="colorLegendList">
-                </ul>
-        </div>
-
         <h2>Teams in This State</h2>
         <p class="sortable-hint">Click on a column header to sort the table.</p>
         <div id="teamTableContainer" class="team-table-container">
@@ -226,8 +187,6 @@
             const teamsJsonUrl = 'team_locations.json';
             const stateCode = getQueryParameter('state');
             const teamsTableBody = document.getElementById('teamsTableBody');
-            const colorLegendList = document.getElementById('colorLegendList');
-
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
             
@@ -335,20 +294,6 @@
                         teamMarkers.addTo(map);
                         map.fitBounds(teamMarkers.getBounds());
                         map.setZoom(map.getZoom() - 1);
-
-                        // NEW: Generate and populate the color legend
-                        const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
-                        uniqueLeagueNames.forEach(name => {
-                            const li = document.createElement('li');
-                            li.className = 'legend-item';
-                            const colorBox = document.createElement('span');
-                            colorBox.className = 'legend-color-box';
-                            const color = name in orgTypeColors ? orgTypeColors[name] : getLeagueColor(name);
-                            colorBox.style.backgroundColor = color;
-                            li.appendChild(colorBox);
-                            li.appendChild(document.createTextNode(name));
-                            colorLegendList.appendChild(li);
-                        });
 
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
