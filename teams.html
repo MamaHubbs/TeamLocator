@@ -90,11 +90,13 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 15px;
+            font-size: 0.7em;
         }
         #mapLegend h4 {
             margin-top: 0;
             color: #133b66;
             font-family: Arial, sans-serif;
+            font-size: 1.2em;
         }
 
         .team-table-container {
@@ -189,11 +191,10 @@
             list-style: none;
             padding: 0;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
         }
         .legend-list li {
-            margin: 0 10px 10px 0;
+            margin: 0 0 10px 0;
         }
         
         @media (max-width: 768px) {
@@ -205,6 +206,19 @@
                 box-sizing: border-box;
             }
         }
+        /* NEW: Search bar styling */
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #searchBar {
+            width: 80%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -213,13 +227,16 @@
         <div class="navbar">
             <a href="index.html">Return to US Map</a>
         </div>
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search by City or Zip Code...">
+        </div>
 
         <div class="map-and-key-container">
             <div id="mapLegend">
                 <h4>100% SwimTopia Status</h4>
                 <ul class="legend-list">
-                    <li class="legend-item"><span class="legend-shape">★</span> 100% SwimTopia Team</li>
-                    <li class="legend-item"><span class="legend-shape">•</span> Not 100% SwimTopia</li>
+                    <li class="legend-item"><span class="legend-shape">★</span> <span>100% SwimTopia Team</span></li>
+                    <li class="legend-item"><span class="legend-shape">•</span> <span>Not 100% SwimTopia</span></li>
                 </ul>
                 <h4>League/Organization Colors</h4>
                 <ul class="legend-list" id="colorLegendList">
@@ -231,8 +248,6 @@
             </div>
         </div>
         
-        <h2>Teams in This State</h2>
-        <p class="sortable-hint">Click on a column header to sort the table.</p>
         <div id="teamTableContainer" class="team-table-container">
             <table>
                 <thead>
@@ -264,6 +279,10 @@
             const stateCode = getQueryParameter('state');
             const teamsTableBody = document.getElementById('teamsTableBody');
             const colorLegendList = document.getElementById('colorLegendList');
+            const searchBar = document.getElementById('searchBar');
+
+            let allTeamsData = [];
+            let teamsInState = [];
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
             
@@ -316,6 +335,104 @@
                 });
             };
 
+            const updateMap = (teams) => {
+                const mapContainer = document.getElementById('team-map');
+                if (mapContainer._leaflet_id) {
+                    mapContainer._leaflet_id = null;
+                    map.remove(); // Remove the old map
+                }
+                const map = L.map('team-map');
+                const teamMarkers = L.featureGroup();
+                teams.forEach(team => {
+                    const lat = parseFloat(team.Latitude);
+                    const lon = parseFloat(team.Longitude);
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        const customIcon = createTeamIcon(team);
+                        const marker = L.marker([lat, lon], {icon: customIcon});
+                        marker.bindPopup(`
+                            <h3>${team.Name}</h3>
+                            <p><strong>City:</strong> ${team.City}</p>
+                            <p><strong>State:</strong> ${team.State}</p>
+                            <p><strong>Zip Code:</strong> ${team['Zip Code']}</p>
+                            <p><strong>League:</strong> ${team['League Name'] || 'N/A'}</p>
+                            <p><strong>100% SwimTopia:</strong> ${team['100% SwimTopia'] ? 'Yes' : 'No'}</p>
+                            <p><strong>Type:</strong> ${team['Organization Type']}</p>
+                            <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
+                            <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
+                            <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
+                            <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
+                        `);
+                        teamMarkers.addLayer(marker);
+                    }
+                });
+                
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+
+                teamMarkers.addTo(map);
+                if (teams.length > 0) {
+                    map.fitBounds(teamMarkers.getBounds());
+                    map.setZoom(map.getZoom() - 1);
+                } else {
+                    map.setView([39.8283, -98.5795], 4); // Center of US if no teams
+                }
+            };
+
+            const renderTable = (teams) => {
+                teamsTableBody.innerHTML = '';
+                if (teams.length === 0) {
+                    teamsTableBody.innerHTML = '<tr><td colspan="9">No teams found for this search.</td></tr>';
+                    return;
+                }
+                teams.forEach(team => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><a href="${team['Panel URL'] || '#'}" target="_blank">${team.Name}</a></td>
+                        <td>${team.City}</td>
+                        <td>${team['Zip Code']}</td>
+                        <td>${team['League Name']}</td>
+                        <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
+                        <td>${team['Organization Type']}</td>
+                        <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                        <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
+                        <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
+                    `;
+                    teamsTableBody.appendChild(row);
+                });
+            };
+
+            const applySortAndFilter = () => {
+                const searchTerm = searchBar.value.toLowerCase();
+                let filteredTeams = teamsInState.filter(team => {
+                    const city = String(team.City).toLowerCase();
+                    const zipCode = String(team['Zip Code']).toLowerCase();
+                    return city.includes(searchTerm) || zipCode.includes(searchTerm);
+                });
+
+                filteredTeams.sort((a, b) => {
+                    const column = sortColumn;
+                    const valueA = String(a[column]).toLowerCase();
+                    const valueB = String(b[column]).toLowerCase();
+                    
+                    if (valueA === valueB) {
+                        const nameA = String(a.Name).toLowerCase();
+                        const nameB = String(b.Name).toLowerCase();
+                        if (nameA < nameB) return sortDirection === 'asc' ? -1 : 1;
+                        if (nameA > nameB) return sortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    }
+                    
+                    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                renderTable(filteredTeams);
+                updateMap(filteredTeams);
+            };
+
             if (!stateCode) {
                 document.getElementById('stateNameHeading').textContent = "Error: State code not specified in URL.";
                 console.error("No 'state' query parameter found in the URL.");
@@ -330,49 +447,16 @@
                     return response.json();
                 })
                 .then(data => {
-                    const allTeamsData = data || [];
-                    let teamsInState = allTeamsData.filter(team => {
+                    allTeamsData = data || [];
+                    teamsInState = allTeamsData.filter(team => {
                         return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
                     });
 
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
                         
-                        const map = L.map('team-map');
-                        const teamMarkers = L.featureGroup();
-                        teamsInState.forEach(team => {
-                            const lat = parseFloat(team.Latitude);
-                            const lon = parseFloat(team.Longitude);
-                            if (!isNaN(lat) && !isNaN(lon)) {
-                                const customIcon = createTeamIcon(team);
-                                const marker = L.marker([lat, lon], {icon: customIcon});
-                                marker.bindPopup(`
-                                    <h3>${team.Name}</h3>
-                                    <p><strong>City:</strong> ${team.City}</p>
-                                    <p><strong>State:</strong> ${team.State}</p>
-                                    <p><strong>Zip Code:</strong> ${team['Zip Code']}</p>
-                                    <p><strong>League:</strong> ${team['League Name'] || 'N/A'}</p>
-                                    <p><strong>100% SwimTopia:</strong> ${team['100% SwimTopia'] ? 'Yes' : 'No'}</p>
-                                    <p><strong>Type:</strong> ${team['Organization Type']}</p>
-                                    <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
-                                    <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
-                                    <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
-                                    <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
-                                `);
-                                teamMarkers.addLayer(marker);
-                            }
-                        });
+                        updateMap(teamsInState);
                         
-                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            maxZoom: 19,
-                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        }).addTo(map);
-
-                        teamMarkers.addTo(map);
-                        map.fitBounds(teamMarkers.getBounds());
-                        map.setZoom(map.getZoom() - 1);
-
-                        // Generate and populate the color legend
                         const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
                         colorLegendList.innerHTML = '';
                         uniqueLeagueNames.forEach(name => {
@@ -383,60 +467,15 @@
                             const color = name in orgTypeColors ? orgTypeColors[name] : getLeagueColor(name);
                             colorBox.style.backgroundColor = color;
                             li.appendChild(colorBox);
-                            li.appendChild(document.createTextNode(name));
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = name;
+                            li.appendChild(textSpan);
                             colorLegendList.appendChild(li);
                         });
 
-                        const renderTable = (teams) => {
-                            teamsTableBody.innerHTML = '';
-                            if (teams.length === 0) {
-                                teamsTableBody.innerHTML = '<tr><td colspan="9">No teams found for this state.</td></tr>';
-                                return;
-                            }
-                            teams.forEach(team => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td><a href="${team['Panel URL'] || '#'}" target="_blank">${team.Name}</a></td>
-                                    <td>${team.City}</td>
-                                    <td>${team['Zip Code']}</td>
-                                    <td>${team['League Name']}</td>
-                                    <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
-                                    <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status']}</td>
-                                    <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
-                                    <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
-                                `;
-                                teamsTableBody.appendChild(row);
-                            });
-                        };
+                        renderTable(teamsInState);
                         
                         const headers = document.querySelectorAll('th[data-sort-by]');
-                        
-                        const applySort = () => {
-                            teamsInState.sort((a, b) => {
-                                const column = sortColumn;
-                                const valueA = String(a[column]).toLowerCase();
-                                const valueB = String(b[column]).toLowerCase();
-                                
-                                if (valueA === valueB) {
-                                    const nameA = String(a.Name).toLowerCase();
-                                    const nameB = String(b.Name).toLowerCase();
-                                    if (nameA < nameB) return sortDirection === 'asc' ? -1 : 1;
-                                    if (nameA > nameB) return sortDirection === 'asc' ? 1 : -1;
-                                    return 0;
-                                }
-                                
-                                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
-                                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
-                                return 0;
-                            });
-                            renderTable(teamsInState);
-                            
-                            headers.forEach(h => h.classList.remove('asc', 'desc'));
-                            const activeHeader = document.querySelector(`th[data-sort-by="${sortColumn}"]`);
-                            activeHeader.classList.add(sortDirection);
-                        };
-
                         headers.forEach(header => {
                             header.addEventListener('click', () => {
                                 const column = header.getAttribute('data-sort-by');
@@ -447,11 +486,15 @@
                                     sortColumn = column;
                                     sortDirection = 'asc';
                                 }
-                                applySort();
+                                applySortAndFilter();
                             });
                         });
                         
-                        applySort();
+                        // Initial sort
+                        applySortAndFilter();
+                        
+                        // NEW: Event listener for search bar
+                        searchBar.addEventListener('input', applySortAndFilter);
 
                     } else {
                         document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
