@@ -192,7 +192,7 @@
                                 }
                             });
                             
-                            const bbox = `${minLon - lonBuffer},${minLat - latBuffer},${maxLon + lonBuffer},${maxLat + latBuffer}`;
+                            const bbox = `${minLon - lonBuffer},${minLat - latBuffer},${maxLon + lonBuffer},${maxLat + lonBuffer}`;
                             stateMapIframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}${markers}&layer=mapnik`;
                         }
                         
