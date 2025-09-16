@@ -74,7 +74,7 @@
         <div id="us-map-object-container">
             <object id="usMapSvgObject" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
         </div>
-        <p>Dark blue if teams are in state.</p>
+        <p class="map-note">States are clickable if teams are located there.</p>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -102,12 +102,12 @@
                                 return response.json();
                             })
                             .then(data => {
-                                // CORRECTED: data is the array itself, so we slice it directly.
-                                const allTeamsData = data.slice(1);
+                                // CORRECTED: data is now an array of objects
+                                const allTeamsData = data || [];
                                 const visitedStates = new Set();
                                 allTeamsData.forEach(team => {
-                                    if (team[8]) { // State code is at index 8
-                                        visitedStates.add(team[8].toUpperCase());
+                                    if (team.State) {
+                                        visitedStates.add(team.State.toUpperCase());
                                     }
                                 });
                                 const statePaths = usMapSvg.querySelectorAll('path');
