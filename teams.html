@@ -61,7 +61,7 @@
             text-decoration: none;
         }
 
-        /* NEW: Flexbox container for map and key */
+        /* Flexbox container for map and key */
         .map-and-key-container {
             display: flex;
             gap: 20px;
@@ -75,14 +75,14 @@
             margin-bottom: 20px;
             border-radius: 8px;
             border: 1px solid #eee;
-            flex-grow: 1; /* NEW: Map takes up available space */
+            flex-grow: 1;
         }
         #team-map {
             height: 100%;
             width: 100%;
         }
 
-        /* NEW: Styling for the legend panel */
+        /* Styling for the legend panel */
         #mapLegend {
             flex-basis: 250px;
             background-color: #f9f9f9;
@@ -216,7 +216,6 @@
 
         <div class="map-and-key-container">
             <div id="mapLegend">
-                <h2>Map Key</h2>
                 <h4>100% SwimTopia Status</h4>
                 <ul class="legend-list">
                     <li class="legend-item"><span class="legend-shape">★</span> 100% SwimTopia Team</li>
@@ -227,7 +226,6 @@
                     </ul>
             </div>
             
-            <h2>Map of Teams</h2>
             <div id="stateMapContainer" class="map-container">
                 <div id="team-map"></div>
             </div>
@@ -244,9 +242,9 @@
                         <th data-sort-by="Zip Code"><div class="header-content">Zip Code <span class="arrow">▲</span></div></th>
                         <th data-sort-by="League Name"><div class="header-content">League <span class="arrow">▲</span></div></th>
                         <th data-sort-by="100% SwimTopia"><div class="header-content">100% ST <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="Organization Type">Type <span class="arrow">▲</span></th>
-                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Organization Type"><div class="header-content">Type <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Subscription Status"><div class="header-content">Subscription <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Account Status"><div class="header-content">Active <span class="arrow">▲</span></div></th>
                         <th data-sort-by="USA-S Club"><div class="header-content">USA-S <span class="arrow">▲</span></div></th>
                     </tr>
                 </thead>
@@ -374,7 +372,7 @@
                         map.fitBounds(teamMarkers.getBounds());
                         map.setZoom(map.getZoom() - 1);
 
-                        // NEW: Generate and populate the color legend
+                        // Generate and populate the color legend
                         const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
                         colorLegendList.innerHTML = '';
                         uniqueLeagueNames.forEach(name => {
@@ -404,7 +402,7 @@
                                     <td>${team['League Name']}</td>
                                     <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['Subscription Status']}</td>
                                     <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
