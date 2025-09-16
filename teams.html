@@ -123,15 +123,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th data-column="name" data-sort-by="2">Name</th>
-                        <th data-column="city" data-sort-by="8">City</th>
-                        <th data-column="zip" data-sort-by="9">Zip Code</th>
-                        <th data-column="league" data-sort-by="4">League</th>
-                        <th data-column="st_100">100% ST</th>
-                        <th data-column="type" data-sort-by="3">Type</th>
-                        <th data-column="subscription" data-sort-by="5">Subscription</th>
-                        <th data-column="active" data-sort-by="6">Active</th>
-                        <th data-column="usa_s">USA-S</th>
+                        <th data-sort-by="Name">Name</th>
+                        <th data-sort-by="City">City</th>
+                        <th data-sort-by="Zip Code">Zip Code</th>
+                        <th data-sort-by="League Name">League</th>
+                        <th data-sort-by="100% SwimTopia">100% ST</th>
+                        <th data-sort-by="Organization Type">Type</th>
+                        <th data-sort-by="Subscription Status">Subscription</th>
+                        <th data-sort-by="Account Status">Active</th>
+                        <th data-sort-by="USA-S Club">USA-S</th>
                     </tr>
                 </thead>
                 <tbody id="teamsTableBody">
@@ -152,7 +152,7 @@
             const teamsTableBody = document.getElementById('teamsTableBody');
 
             // Initial sort configuration
-            let sortColumn = 'zip';
+            let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
 
             if (!stateCode) {
@@ -169,25 +169,24 @@
                     return response.json();
                 })
                 .then(data => {
-                    const allTeamsData = data.values.slice(1);
+                    // CORRECTED: data is now an array of objects
+                    let allTeamsData = data || [];
                     let teamsInState = allTeamsData.filter(team => {
-                        const teamState = team[8] ? team[8].toUpperCase() : '';
-                        const stateCodeUpper = stateCode.toUpperCase();
-                        return teamState === stateCodeUpper;
+                        return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
                     });
 
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
                         
-                        // Map Logic
+                        // Map Logic with Leaflet.js
                         const map = L.map('team-map');
                         const teamMarkers = L.featureGroup();
                         teamsInState.forEach(team => {
-                            const lat = parseFloat(team[11]);
-                            const lon = parseFloat(team[12]);
+                            const lat = parseFloat(team.Latitude);
+                            const lon = parseFloat(team.Longitude);
                             if (!isNaN(lat) && !isNaN(lon)) {
                                 const marker = L.marker([lat, lon]);
-                                marker.bindPopup(`${team[2]}<br>Type: ${team[3]}`);
+                                marker.bindPopup(`${team.Name}<br>Type: ${team.Organization Type}`);
                                 teamMarkers.addLayer(marker);
                             }
                         });
@@ -198,7 +197,7 @@
                         teamMarkers.addTo(map);
                         map.fitBounds(teamMarkers.getBounds());
 
-                        // Sort and render the table
+                        // Function to render the table
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
                             if (teams.length === 0) {
@@ -208,26 +207,26 @@
                             teams.forEach(team => {
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
-                                    <td><a href="${team[10] || '#'}" target="_blank">${team[2]}</a></td>
-                                    <td>${team[8]}</td>
-                                    <td>${team[9]}</td>
-                                    <td>${team[4]}</td>
-                                    <td>${'No Data'}</td>
-                                    <td>${team[3]}</td>
-                                    <td>${team[5]}</td>
-                                    <td>${team[6]}</td>
-                                    <td>${'No Data'}</td>
+                                    <td><a href="${team['Panel URL'] || '#'}" target="_blank">${team.Name}</a></td>
+                                    <td>${team.City}</td>
+                                    <td>${team['Zip Code']}</td>
+                                    <td>${team['League Name']}</td>
+                                    <td>${team['100% SwimTopia']}</td>
+                                    <td>${team['Organization Type']}</td>
+                                    <td>${team['Subscription Status']}</td>
+                                    <td>${team['Account Status']}</td>
+                                    <td>${team['USA-S Club']}</td>
                                 `;
                                 teamsTableBody.appendChild(row);
                             });
                         };
                         
-                        // Initial sort
+                        // Initial sort by Zip Code, then Name
                         teamsInState.sort((a, b) => {
-                            const zipA = a[9].toLowerCase();
-                            const zipB = b[9].toLowerCase();
-                            const nameA = a[2].toLowerCase();
-                            const nameB = b[2].toLowerCase();
+                            const zipA = a['Zip Code'].toLowerCase();
+                            const zipB = b['Zip Code'].toLowerCase();
+                            const nameA = a.Name.toLowerCase();
+                            const nameB = b.Name.toLowerCase();
                             
                             if (zipA === zipB) {
                                 return nameA.localeCompare(nameB);
@@ -239,8 +238,7 @@
                         // Add sorting to table headers
                         document.querySelectorAll('th[data-sort-by]').forEach(header => {
                             header.addEventListener('click', () => {
-                                const column = header.getAttribute('data-column');
-                                const sortIndex = header.getAttribute('data-sort-by');
+                                const column = header.getAttribute('data-sort-by');
                                 
                                 if (sortColumn === column) {
                                     sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -250,8 +248,8 @@
                                 }
 
                                 teamsInState.sort((a, b) => {
-                                    const valueA = a[sortIndex].toLowerCase();
-                                    const valueB = b[sortIndex].toLowerCase();
+                                    const valueA = String(a[column]).toLowerCase();
+                                    const valueB = String(b[column]).toLowerCase();
                                     
                                     if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
                                     if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
