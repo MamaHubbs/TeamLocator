@@ -102,8 +102,8 @@
                                 return response.json();
                             })
                             .then(data => {
-                                // CORRECTED: Access the `values` array and slice to remove the header
-                                const allTeamsData = data.values ? data.values.slice(1) : [];
+                                // CORRECTED: data is the array itself, so we slice it directly.
+                                const allTeamsData = data.slice(1);
                                 const visitedStates = new Set();
                                 allTeamsData.forEach(team => {
                                     if (team[8]) { // State code is at index 8
