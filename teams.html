@@ -238,7 +238,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Correctly process the data which is a list of objects
                     const allTeamsData = data || [];
                     let teamsInState = allTeamsData.filter(team => {
                         return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
@@ -247,7 +246,6 @@
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
                         
-                        // Map Logic with Leaflet.js
                         const map = L.map('team-map');
                         const teamMarkers = L.featureGroup();
                         teamsInState.forEach(team => {
@@ -260,14 +258,16 @@
                                 teamMarkers.addLayer(marker);
                             }
                         });
+                        
                         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             maxZoom: 19,
                             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }).addTo(map);
+
                         teamMarkers.addTo(map);
+                        
                         map.fitBounds(teamMarkers.getBounds());
 
-                        // Function to render the table
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
                             if (teams.length === 0) {
@@ -291,7 +291,6 @@
                             });
                         };
                         
-                        // Initial sort by Zip Code, then Name
                         teamsInState.sort((a, b) => {
                             const zipA = String(a['Zip Code']).toLowerCase();
                             const zipB = String(b['Zip Code']).toLowerCase();
@@ -305,7 +304,6 @@
                         });
                         renderTable(teamsInState);
 
-                        // Add sorting to table headers
                         document.querySelectorAll('th[data-sort-by]').forEach(header => {
                             header.addEventListener('click', () => {
                                 const column = header.getAttribute('data-sort-by');
@@ -329,9 +327,9 @@
                                 renderTable(teamsInState);
                             });
                         });
-
                     } else {
                         document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
+                        teamsTableBody.innerHTML = `<tr><td colspan="9">No teams available for ${stateCode.toUpperCase()} yet.</td></tr>`;
                     }
                 })
                 .catch(error => {
@@ -339,7 +337,6 @@
                     document.getElementById('stateNameHeading').textContent = "Failed to load state teams.";
                     teamsTableBody.innerHTML = `<tr><td colspan="9">Error loading teams. Please try again later.</td></tr>`;
                 });
-
             function stateCodeToFullName(code) {
                 const states = {
                     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
