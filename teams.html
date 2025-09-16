@@ -21,7 +21,7 @@
             color: #333;
         }
         .container {
-            max-width: 100%; /* CHANGED: Set to 100% for full width */
+            max-width: 100%;
             margin: auto;
             background: #fff;
             padding: 30px;
@@ -88,7 +88,8 @@
         th, td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
-            white-space: nowrap;
+            font-size: 0.9em; /* CHANGED: Smaller font size */
+            white-space: normal; /* CHANGED: Allow text to wrap */
         }
         th {
             background-color: #133b66;
@@ -274,11 +275,11 @@
                                     <td>${team.City}</td>
                                     <td>${team['Zip Code']}</td>
                                     <td>${team['League Name']}</td>
-                                    <td>${team['100% SwimTopia']}</td>
+                                    <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
                                     <td>${team['Subscription Status']}</td>
-                                    <td>${team['Account Status']}</td>
-                                    <td>${team['USA-S Club']}</td>
+                                    <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
                                 teamsTableBody.appendChild(row);
                             });
