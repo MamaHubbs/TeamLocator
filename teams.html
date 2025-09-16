@@ -153,9 +153,9 @@
             background-color: #e9e9e9;
         }
 
-        /* NEW: Styling for 100% SwimTopia teams/leagues */
+        /* Styling for 100% SwimTopia teams/leagues */
         .st-highlight-text {
-            color: #006400; /* CHANGED: Dark Green */
+            color: #006400; /* Dark green */
         }
         .st-normal-text {
             color: #666; /* Grey for normal text */
@@ -335,11 +335,11 @@
             };
             
             const createTeamIcon = (team) => {
-                const is100Swimtopia = is100SwimtopiaTeam(team);
+                const is100SwimTopia = is100SwimtopiaTeam(team);
                 const orgType = team['Organization Type'];
                 const leagueName = team['League Name'];
                 
-                let iconContent = is100Swimtopia ? '★' : '•';
+                let iconContent = is100SwimTopia ? '★' : '•';
                 
                 let markerColor;
                 if (leagueName) {
