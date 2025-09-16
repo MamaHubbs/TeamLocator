@@ -109,7 +109,7 @@
             margin-top: 15px;
         }
         th, td {
-            padding: 8px; /* CHANGED: Reduced padding */
+            padding: 8px;
             border-bottom: 1px solid #ddd;
             font-size: 0.9em;
             white-space: normal;
@@ -142,15 +142,21 @@
             transform: rotate(0deg);
         }
         
-        /* NEW: Styles for active and inactive rows */
+        /* Styles for active and inactive rows */
         .active-row {
-            background-color: #d4edda; /* Light green */
+            background-color: #d4edda;
         }
         .inactive-row {
-            background-color: #f8f9fa; /* Light gray */
+            background-color: #f8f9fa;
         }
+        
         .active-row:hover, .inactive-row:hover {
             background-color: #e9e9e9;
+        }
+
+        /* NEW: Highlight for 100% SwimTopia teams */
+        .highlight {
+            font-weight: bold;
         }
 
         .custom-marker {
@@ -375,7 +381,7 @@
                             <p><strong>Type:</strong> ${team['Organization Type']}</p>
                             <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
                             <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
-                            <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}
+                            <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
                             <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
                         `);
                         teamMarkers.addLayer(marker);
@@ -401,16 +407,22 @@
                 teams.forEach(team => {
                     const row = document.createElement('tr');
                     const isActive = team['Account Status'];
+                    const is100ST = team['100% SwimTopia'];
+                    
                     row.className = isActive ? 'active-row' : 'inactive-row';
+                    
+                    const nameCellClass = is100ST ? 'highlight' : '';
+                    const leagueCellClass = is100ST ? 'highlight' : '';
+
                     row.innerHTML = `
-                        <td><a href="${team['Panel URL'] || '#'}" target="_blank">${team.Name}</a></td>
+                        <td><a href="${team['Panel URL'] || '#'}" target="_blank" class="${nameCellClass}">${team.Name}</a></td>
                         <td>${team.City}</td>
                         <td>${team['Zip Code']}</td>
-                        <td>${team['League Name']}</td>
-                        <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
+                        <td class="${leagueCellClass}">${team['League Name']}</td>
+                        <td>${is100ST ? 'Yes' : 'No'}</td>
                         <td>${team['Organization Type']}</td>
                         <td>${team['Subscription Status']}</td>
-                        <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
+                        <td>${isActive ? 'Yes' : 'No'}</td>
                         <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                     `;
                     teamsTableBody.appendChild(row);
