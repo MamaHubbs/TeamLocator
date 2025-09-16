@@ -6,10 +6,10 @@
     <title>State Swim Teams</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          integrity="sha256-p4NxAoJBhIIN+hmNHnZAqLAKeGZ0Xn+KFxJ/oJ/mZ6g="
           crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            integrity="sha256-nZqI4z+x+i+g183+K/c+g4+D/e+i5="
             crossorigin=""></script>
 
     <style>
@@ -21,7 +21,7 @@
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 100%; /* CHANGED: Set to 100% for full width */
             margin: auto;
             background: #fff;
             padding: 30px;
@@ -88,7 +88,8 @@
         th, td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
-            white-space: nowrap;
+            font-size: 0.9em; /* CHANGED: Smaller font size */
+            white-space: normal; /* CHANGED: Allow text to wrap */
         }
         th {
             background-color: #133b66;
@@ -96,9 +97,24 @@
             cursor: pointer;
             position: sticky;
             top: 0;
+            display: flex; /* CHANGED: Use flexbox for alignment */
+            align-items: center;
+            justify-content: space-between; /* CHANGED: Space out text and arrow */
         }
         th:hover {
             background-color: #2d7cbc;
+        }
+        th span.arrow { /* NEW: Style for the arrow icon */
+            margin-left: 5px;
+            font-size: 0.8em;
+            transform: rotate(0deg);
+            transition: transform 0.2s;
+        }
+        th.asc span.arrow {
+            transform: rotate(180deg);
+        }
+        th.desc span.arrow {
+            transform: rotate(0deg);
         }
         tr:nth-child(even) {
             background-color: #f2f2f2;
@@ -122,6 +138,13 @@
         .custom-marker.star {
             font-size: 20px;
         }
+        .sortable-hint {
+            font-size: 0.9em;
+            text-align: center;
+            color: #666;
+            margin-top: -15px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -135,19 +158,20 @@
             <div id="team-map"></div>
         </div>
         <h2>Teams in This State</h2>
+        <p class="sortable-hint">Click on a column header to sort the table.</p>
         <div id="teamTableContainer" class="team-table-container">
             <table>
                 <thead>
                     <tr>
-                        <th data-sort-by="Name">Name</th>
-                        <th data-sort-by="City">City</th>
-                        <th data-sort-by="Zip Code">Zip Code</th>
-                        <th data-sort-by="League Name">League</th>
-                        <th data-sort-by="100% SwimTopia">100% ST</th>
-                        <th data-sort-by="Organization Type">Type</th>
-                        <th data-sort-by="Subscription Status">Subscription</th>
-                        <th data-sort-by="Account Status">Active</th>
-                        <th data-sort-by="USA-S Club">USA-S</th>
+                        <th data-sort-by="Name">Name <span class="arrow">▲</span></th>
+                        <th data-sort-by="City">City <span class="arrow">▲</span></th>
+                        <th data-sort-by="Zip Code">Zip Code <span class="arrow">▲</span></th>
+                        <th data-sort-by="League Name">League <span class="arrow">▲</span></th>
+                        <th data-sort-by="100% SwimTopia">100% ST <span class="arrow">▲</span></th>
+                        <th data-sort-by="Organization Type">Type <span class="arrow">▲</span></th>
+                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></th>
+                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></th>
+                        <th data-sort-by="USA-S Club">USA-S <span class="arrow">▲</span></th>
                     </tr>
                 </thead>
                 <tbody id="teamsTableBody">
@@ -274,49 +298,60 @@
                                     <td>${team.City}</td>
                                     <td>${team['Zip Code']}</td>
                                     <td>${team['League Name']}</td>
-                                    <td>${team['100% SwimTopia']}</td>
+                                    <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status']}</td>
-                                    <td>${team['Account Status']}</td>
-                                    <td>${team['USA-S Club']}</td>
+                                    <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
                                 teamsTableBody.appendChild(row);
                             });
                         };
-                        
-                        teamsInState.sort((a, b) => {
-                            const zipA = String(a['Zip Code']).toLowerCase();
-                            const zipB = String(b['Zip Code']).toLowerCase();
-                            const nameA = String(a.Name).toLowerCase();
-                            const nameB = String(b.Name).toLowerCase();
-                            
-                            if (zipA === zipB) {
-                                return nameA.localeCompare(nameB);
-                            }
-                            return zipA.localeCompare(zipB);
-                        });
-                        renderTable(teamsInState);
 
-                        document.querySelectorAll('th[data-sort-by]').forEach(header => {
+                        const headers = document.querySelectorAll('th[data-sort-by]');
+                        
+                        const applySort = () => {
+                            teamsInState.sort((a, b) => {
+                                const column = sortColumn;
+                                const valueA = String(a[column]).toLowerCase();
+                                const valueB = String(b[column]).toLowerCase();
+                                
+                                if (valueA === valueB) {
+                                    const nameA = String(a.Name).toLowerCase();
+                                    const nameB = String(b.Name).toLowerCase();
+                                    if (nameA < nameB) return sortDirection === 'asc' ? -1 : 1;
+                                    if (nameA > nameB) return sortDirection === 'asc' ? 1 : -1;
+                                    return 0;
+                                }
+                                
+                                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                                return 0;
+                            });
+                            renderTable(teamsInState);
+                            
+                            headers.forEach(h => h.classList.remove('asc', 'desc'));
+                            const activeHeader = document.querySelector(`th[data-sort-by="${sortColumn}"]`);
+                            activeHeader.classList.add(sortDirection);
+                        };
+
+                        headers.forEach(header => {
                             header.addEventListener('click', () => {
                                 const column = header.getAttribute('data-sort-by');
+                                
                                 if (sortColumn === column) {
                                     sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
                                 } else {
                                     sortColumn = column;
                                     sortDirection = 'asc';
                                 }
-                                teamsInState.sort((a, b) => {
-                                    const valueA = String(a[column]).toLowerCase();
-                                    const valueB = String(b[column]).toLowerCase();
-                                    
-                                    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
-                                    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
-                                    return 0;
-                                });
-                                renderTable(teamsInState);
+                                applySort();
                             });
                         });
+                        
+                        // Initial sort
+                        applySort();
+
                     } else {
                         document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
                         teamsTableBody.innerHTML = `<tr><td colspan="9">No teams available for ${stateCode.toUpperCase()} yet.</td></tr>`;
@@ -327,6 +362,7 @@
                     document.getElementById('stateNameHeading').textContent = "Failed to load state teams.";
                     teamsTableBody.innerHTML = `<tr><td colspan="9">Error loading teams. Please try again later.</td></tr>`;
                 });
+
             function stateCodeToFullName(code) {
                 const states = {
                     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
