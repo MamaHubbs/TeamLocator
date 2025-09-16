@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SwimTopia Teams Across the US</title>
+    <title>State Swim Teams</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
     <style>
         body {
             font-family: Helvetica, sans-serif;
@@ -13,7 +17,7 @@
             color: #333;
         }
         .container {
-            max-width: 100%; /* CHANGED: Set to 100% for full width */
+            max-width: 100%;
             margin: auto;
             background: #fff;
             padding: 30px;
@@ -25,118 +29,441 @@
             color: #133b66;
             text-align: center;
             margin-bottom: 25px;
-            font-size: 2.2em;
+            font-size: 2em;
         }
-        p {
+        h2 {
+            font-family: Arial, sans-serif;
+            color: #2d7cbc;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            font-size: 1.2em;
+        }
+        .navbar {
+            background-color: #133b66;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            border-radius: 5px;
             text-align: center;
-            margin-bottom: 30px;
+        }
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            font-family: Arial, sans-serif;
             font-size: 1.1em;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
-        #us-map-object-container {
-            width: 850px; /* You may want to adjust this for different screen sizes */
-            height: auto;
-            max-width: 100%;
-            display: block;
-            margin: 0 auto;
+        .navbar a:hover {
+            background-color: #2d7cbc;
+            text-decoration: none;
         }
-        #us-map-object-container object {
+
+        /* Flexbox container for map and key */
+        .map-and-key-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .map-container {
+            height: 600px;
+            position: relative;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            flex-grow: 1;
+        }
+        #team-map {
+            height: 100%;
             width: 100%;
-            height: auto;
-            display: block;
         }
-        #us-map-svg path {
-            fill: #5c9ad5 !important;
-            stroke: #fff !important;
-            stroke-width: 2px !important;
-            cursor: default;
-            transition: fill 0.2s ease-in-out;
+
+        /* Styling for the legend panel */
+        #mapLegend {
+            flex-basis: 250px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 15px;
+            font-size: 0.7em; /* NEW: Smaller font size for the key */
         }
-        #us-map-svg path.visited {
-            fill: #133b66 !important;
-            cursor: pointer !important;
+        #mapLegend h4 {
+            margin-top: 0;
+            color: #133b66;
+            font-family: Arial, sans-serif;
+            font-size: 1.2em;
         }
-        #us-map-svg path:hover {
-            fill: #2d7cbc !important;
-            cursor: pointer !important;
+
+        .team-table-container {
+            overflow-x: auto;
         }
-        .map-note {
-            text-align: center;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
             font-size: 0.9em;
-            color: #666;
-            margin-top: 20px;
+            white-space: normal;
+        }
+        th {
+            background-color: #133b66;
+            color: white;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+        }
+        th:hover {
+            background-color: #2d7cbc;
+        }
+        th .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        th span.arrow {
+            margin-left: 5px;
+            font-size: 0.8em;
+            transform: rotate(0deg);
+            transition: transform 0.2s;
+        }
+        th.asc span.arrow {
+            transform: rotate(180deg);
+        }
+        th.desc span.arrow {
+            transform: rotate(0deg);
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e9e9e9;
+        }
+        .custom-marker {
+            background-color: #3498db;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+            font-size: 18px;
+            color: #fff;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            font-family: 'Arial Black', sans-serif;
+        }
+        .custom-marker.star {
+            font-size: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .legend-color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .legend-shape {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .legend-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .legend-list li {
+            margin: 0 0 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .map-and-key-container {
+                flex-direction: column;
+            }
+            #mapLegend {
+                width: 100%;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Find SwimTopia Teams Across the US!</h1>
-        <p>Click on a state to view a list of teams and their information.</p>
-        <div id="us-map-object-container">
-            <object id="usMapSvgObject" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
+        <h1 id="stateNameHeading">Loading State Teams...</h1>
+        <div class="navbar">
+            <a href="index.html">Return to US Map</a>
         </div>
-        <p class="map-note">States are clickable if teams are located there.</p>
+
+        <div class="map-and-key-container">
+            <div id="mapLegend">
+                <h4>100% SwimTopia Status</h4>
+                <ul class="legend-list">
+                    <li class="legend-item"><span class="legend-shape">★</span> <span>100% SwimTopia Team</span></li>
+                    <li class="legend-item"><span class="legend-shape">•</span> <span>Not 100% SwimTopia</span></li>
+                </ul>
+                <h4>League/Organization Colors</h4>
+                <ul class="legend-list" id="colorLegendList">
+                    </ul>
+            </div>
+            
+            <div id="stateMapContainer" class="map-container">
+                <div id="team-map"></div>
+            </div>
+        </div>
+        
+        <div id="teamTableContainer" class="team-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort-by="Name"><div class="header-content">Name <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="City"><div class="header-content">City <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Zip Code"><div class="header-content">Zip Code <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="League Name"><div class="header-content">League <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="100% SwimTopia"><div class="header-content">100% ST <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Organization Type"><div class="header-content">Type <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Subscription Status"><div class="header-content">Subscription <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Account Status"><div class="header-content">Active <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="USA-S Club"><div class="header-content">USA-S <span class="arrow">▲</span></div></th>
+                    </tr>
+                </thead>
+                <tbody id="teamsTableBody">
+                    <tr><td colspan="9">No teams found for this state.</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const usMapSvgObject = document.getElementById('usMapSvgObject');
+            const getQueryParameter = (name) => {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(name);
+            };
+            const teamsJsonUrl = 'team_locations.json';
+            const stateCode = getQueryParameter('state');
+            const teamsTableBody = document.getElementById('teamsTableBody');
+            const colorLegendList = document.getElementById('colorLegendList');
+            let sortColumn = 'Zip Code';
+            let sortDirection = 'asc';
             
-            usMapSvgObject.addEventListener('load', function() {
-                try {
-                    let usMapSvg = usMapSvgObject.contentDocument.getElementById('us-map-svg');
-                    if (!usMapSvg) {
-                        if (usMapSvgObject.contentDocument && usMapSvgObject.contentDocument.documentElement && usMapSvgObject.contentDocument.documentElement.tagName === 'svg') {
-                            usMapSvg = usMapSvgObject.contentDocument.documentElement;
-                            usMapSvg.id = 'us-map-svg';
-                        } else {
-                            console.error("Error: Map SVG structure invalid.");
-                            return;
-                        }
-                    }
-                    if (usMapSvg) {
-                        const teamsJsonUrl = 'team_locations.json';
-                        fetch(teamsJsonUrl)
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error(`HTTP error! status: ${response.status}`);
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                const allTeamsData = data || [];
-                                const visitedStates = new Set();
-                                allTeamsData.forEach(team => {
-                                    if (team.State) {
-                                        visitedStates.add(team.State.toUpperCase());
-                                    }
-                                });
-                                const statePaths = usMapSvg.querySelectorAll('path');
-                                statePaths.forEach(path => {
-                                    let stateCode = path.id ? path.id.toUpperCase() : null;
-                                    if (!stateCode && path.classList.length > 0) {
-                                        stateCode = path.classList[0].toUpperCase();
-                                        path.id = stateCode;
-                                    }
-                                    if (stateCode && visitedStates.has(stateCode)) {
-                                        path.classList.add('visited');
-                                        path.addEventListener('click', function() {
-                                            window.location.href = `teams.html?state=${stateCode}`;
-                                        });
-                                    } else {
-                                        path.style.opacity = '0.7';
-                                    }
-                                });
-                            })
-                            .catch(error => {
-                                console.error('Error fetching the teams index for map:', error);
-                            });
-                    }
-                } catch (e) {
-                    console.error("Failed to access SVG content:", e);
+            const leagueColors = {};
+            const orgTypeColors = {
+                'Year Round Club Team': '#3498db',
+                'Summer/Rec League': '#e74c3c',
+                'Recreational Summer Team': '#2ecc71',
+                'High School Team': '#f1c40f',
+                'Other': '#95a5a6'
+            };
+
+            const getLeagueColor = (leagueName) => {
+                if (leagueColors[leagueName]) {
+                    return leagueColors[leagueName];
                 }
-            }, false);
-            usMapSvgObject.addEventListener('error', function() {
-                console.error("Error loading SVG file via <object> tag. Check file path and existence.");
-            });
+                let hash = 0;
+                for (let i = 0; i < leagueName.length; i++) {
+                    hash = leagueName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                let color = '#';
+                for (let i = 0; i < 3; i++) {
+                    const value = (hash >> (i * 8)) & 0xFF;
+                    color += ('00' + value.toString(16)).substr(-2);
+                }
+                leagueColors[leagueName] = color;
+                return color;
+            };
+
+            const createTeamIcon = (team) => {
+                const is100SwimTopia = team['100% SwimTopia'];
+                const orgType = team['Organization Type'];
+                const leagueName = team['League Name'];
+                
+                let iconContent = is100SwimTopia ? '★' : '•';
+                
+                let markerColor;
+                if (leagueName) {
+                    markerColor = getLeagueColor(leagueName);
+                } else {
+                    markerColor = orgTypeColors[orgType] || orgTypeColors['Other'];
+                }
+
+                return L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${team.Name} - ${team['League Name'] || 'No League'}">${iconContent}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                    popupAnchor: [0, -12]
+                });
+            };
+
+            if (!stateCode) {
+                document.getElementById('stateNameHeading').textContent = "Error: State code not specified in URL.";
+                console.error("No 'state' query parameter found in the URL.");
+                return;
+            }
+
+            fetch(teamsJsonUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const allTeamsData = data || [];
+                    let teamsInState = allTeamsData.filter(team => {
+                        return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
+                    });
+
+                    if (teamsInState.length > 0) {
+                        document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
+                        
+                        const map = L.map('team-map');
+                        const teamMarkers = L.featureGroup();
+                        teamsInState.forEach(team => {
+                            const lat = parseFloat(team.Latitude);
+                            const lon = parseFloat(team.Longitude);
+                            if (!isNaN(lat) && !isNaN(lon)) {
+                                const customIcon = createTeamIcon(team);
+                                const marker = L.marker([lat, lon], {icon: customIcon});
+                                marker.bindPopup(`
+                                    <h3>${team.Name}</h3>
+                                    <p><strong>City:</strong> ${team.City}</p>
+                                    <p><strong>State:</strong> ${team.State}</p>
+                                    <p><strong>Zip Code:</strong> ${team['Zip Code']}</p>
+                                    <p><strong>League:</strong> ${team['League Name'] || 'N/A'}</p>
+                                    <p><strong>100% SwimTopia:</strong> ${team['100% SwimTopia'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>Type:</strong> ${team['Organization Type']}</p>
+                                    <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
+                                    <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
+                                `);
+                                teamMarkers.addLayer(marker);
+                            }
+                        });
+                        
+                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        }).addTo(map);
+
+                        teamMarkers.addTo(map);
+                        map.fitBounds(teamMarkers.getBounds());
+                        map.setZoom(map.getZoom() - 1);
+
+                        // Generate and populate the color legend
+                        const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
+                        colorLegendList.innerHTML = '';
+                        uniqueLeagueNames.forEach(name => {
+                            const li = document.createElement('li');
+                            li.className = 'legend-item';
+                            const colorBox = document.createElement('span');
+                            colorBox.className = 'legend-color-box';
+                            const color = name in orgTypeColors ? orgTypeColors[name] : getLeagueColor(name);
+                            colorBox.style.backgroundColor = color;
+                            li.appendChild(colorBox);
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = name;
+                            li.appendChild(textSpan);
+                            colorLegendList.appendChild(li);
+                        });
+
+                        const renderTable = (teams) => {
+                            teamsTableBody.innerHTML = '';
+                            if (teams.length === 0) {
+                                teamsTableBody.innerHTML = '<tr><td colspan="9">No teams found for this state.</td></tr>';
+                                return;
+                            }
+                            teams.forEach(team => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td><a href="${team['Panel URL'] || '#'}" target="_blank">${team.Name}</a></td>
+                                    <td>${team.City}</td>
+                                    <td>${team['Zip Code']}</td>
+                                    <td>${team['League Name']}</td>
+                                    <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['Organization Type']}</td>
+                                    <td>${team['Subscription Status']}</td>
+                                    <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
+                                `;
+                                teamsTableBody.appendChild(row);
+                            });
+                        };
+                        
+                        const headers = document.querySelectorAll('th[data-sort-by]');
+                        
+                        const applySort = () => {
+                            teamsInState.sort((a, b) => {
+                                const column = sortColumn;
+                                const valueA = String(a[column]).toLowerCase();
+                                const valueB = String(b[column]).toLowerCase();
+                                
+                                if (valueA === valueB) {
+                                    const nameA = String(a.Name).toLowerCase();
+                                    const nameB = String(b.Name).toLowerCase();
+                                    if (nameA < nameB) return sortDirection === 'asc' ? -1 : 1;
+                                    if (nameA > nameB) return sortDirection === 'asc' ? 1 : -1;
+                                    return 0;
+                                }
+                                
+                                if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                                if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                                return 0;
+                            });
+                            renderTable(teamsInState);
+                            
+                            headers.forEach(h => h.classList.remove('asc', 'desc'));
+                            const activeHeader = document.querySelector(`th[data-sort-by="${sortColumn}"]`);
+                            activeHeader.classList.add(sortDirection);
+                        };
+
+                        headers.forEach(header => {
+                            header.addEventListener('click', () => {
+                                const column = header.getAttribute('data-sort-by');
+                                
+                                if (sortColumn === column) {
+                                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                                } else {
+                                    sortColumn = column;
+                                    sortDirection = 'asc';
+                                }
+                                applySort();
+                            });
+                        });
+                        
+                        applySort();
+
+                    } else {
+                        document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
+                        teamsTableBody.innerHTML = `<tr><td colspan="9">No teams available for ${stateCode.toUpperCase()} yet.</td></tr>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching the teams data:', error);
+                    document.getElementById('stateNameHeading').textContent = "Failed to load state teams.";
+                    teamsTableBody.innerHTML = `<tr><td colspan="9">Error loading teams. Please try again later.</td></tr>`;
+                });
+
+            function stateCodeToFullName(code) {
+                const states = {
+                    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+                };
+                return states[code] || code;
+            }
         });
     </script>
 </body>
