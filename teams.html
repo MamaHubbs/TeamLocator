@@ -106,9 +106,8 @@
         tr:hover {
             background-color: #e9e9e9;
         }
-
-        /* NEW: Custom marker styling */
         .custom-marker {
+            background-color: #3498db;
             width: 24px;
             height: 24px;
             text-align: center;
@@ -163,15 +162,12 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 return urlParams.get(name);
             };
-
             const teamsJsonUrl = 'team_locations.json';
             const stateCode = getQueryParameter('state');
             const teamsTableBody = document.getElementById('teamsTableBody');
-
-            // Initial sort configuration
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
-
+            
             // Cache for league colors
             const leagueColors = {};
             const orgTypeColors = {
@@ -182,7 +178,6 @@
                 'Other': '#95a5a6'
             };
 
-            // Function to generate a consistent color for a given string
             const getLeagueColor = (leagueName) => {
                 if (leagueColors[leagueName]) {
                     return leagueColors[leagueName];
@@ -200,7 +195,6 @@
                 return color;
             };
 
-            // Function to create a custom marker icon
             const createTeamIcon = (team) => {
                 const is100SwimTopia = team['100% SwimTopia'];
                 const orgType = team['Organization Type'];
@@ -238,6 +232,7 @@
                     return response.json();
                 })
                 .then(data => {
+                    // CORRECTED: data is now an array of objects
                     const allTeamsData = data || [];
                     let teamsInState = allTeamsData.filter(team => {
                         return team.State && team.State.toUpperCase() === stateCode.toUpperCase();
@@ -265,7 +260,6 @@
                         }).addTo(map);
 
                         teamMarkers.addTo(map);
-                        
                         map.fitBounds(teamMarkers.getBounds());
 
                         const renderTable = (teams) => {
@@ -307,14 +301,12 @@
                         document.querySelectorAll('th[data-sort-by]').forEach(header => {
                             header.addEventListener('click', () => {
                                 const column = header.getAttribute('data-sort-by');
-                                
                                 if (sortColumn === column) {
                                     sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
                                 } else {
                                     sortColumn = column;
                                     sortDirection = 'asc';
                                 }
-
                                 teamsInState.sort((a, b) => {
                                     const valueA = String(a[column]).toLowerCase();
                                     const valueB = String(b[column]).toLowerCase();
@@ -323,7 +315,6 @@
                                     if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
                                     return 0;
                                 });
-
                                 renderTable(teamsInState);
                             });
                         });
