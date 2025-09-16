@@ -6,10 +6,10 @@
     <title>State Swim Teams</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          integrity="sha256-p4NxAoJBhIIN+hmNHnZAqLAKeGZ0Xn+KFxJ/oJ/mZ6g="
           crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            integrity="sha256-nZqI4z+x+i+g183+K/c+g4+D/e+i5="
             crossorigin=""></script>
 
     <style>
@@ -21,7 +21,7 @@
             color: #333;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: auto;
             background: #fff;
             padding: 30px;
@@ -76,31 +76,35 @@
             height: 100%;
             width: 100%;
         }
-        .team-list ul {
-            list-style-type: none;
-            padding: 0;
+        .team-table-container {
+            overflow-x: auto;
         }
-        .team-list li {
-            background-color: #f9f9f9;
-            border: 1px solid #eee;
-            border-radius: 5px;
-            padding: 10px 15px;
-            margin-bottom: 10px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 15px;
         }
-        .team-list li a {
-            font-weight: bold;
-            color: #133b66;
-            text-decoration: none;
-            font-size: 1.1em;
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
         }
-        .team-list li a:hover {
-            text-decoration: underline;
+        th {
+            background-color: #133b66;
+            color: white;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
         }
-        .team-list li p {
-            font-size: 0.9em;
-            color: #555;
-            margin-top: 5px;
-            margin-bottom: 0;
+        th:hover {
+            background-color: #2d7cbc;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e9e9e9;
         }
     </style>
 </head>
@@ -115,10 +119,25 @@
             <div id="team-map"></div>
         </div>
         <h2>Teams in This State</h2>
-        <div id="teamsList" class="team-list">
-            <ul>
-                <li>No teams found for this state.</li>
-            </ul>
+        <div id="teamTableContainer" class="team-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-column="name" data-sort-by="2">Name</th>
+                        <th data-column="city" data-sort-by="8">City</th>
+                        <th data-column="zip" data-sort-by="9">Zip Code</th>
+                        <th data-column="league" data-sort-by="4">League</th>
+                        <th data-column="st_100">100% ST</th>
+                        <th data-column="type" data-sort-by="3">Type</th>
+                        <th data-column="subscription" data-sort-by="5">Subscription</th>
+                        <th data-column="active" data-sort-by="6">Active</th>
+                        <th data-column="usa_s">USA-S</th>
+                    </tr>
+                </thead>
+                <tbody id="teamsTableBody">
+                    <tr><td colspan="9">No teams found for this state.</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
     <script>
@@ -127,13 +146,21 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 return urlParams.get(name);
             };
+
             const teamsJsonUrl = 'team_locations.json';
             const stateCode = getQueryParameter('state');
+            const teamsTableBody = document.getElementById('teamsTableBody');
+
+            // Initial sort configuration
+            let sortColumn = 'zip';
+            let sortDirection = 'asc';
+
             if (!stateCode) {
                 document.getElementById('stateNameHeading').textContent = "Error: State code not specified in URL.";
                 console.error("No 'state' query parameter found in the URL.");
                 return;
             }
+
             fetch(teamsJsonUrl)
                 .then(response => {
                     if (!response.ok) {
@@ -142,26 +169,19 @@
                     return response.json();
                 })
                 .then(data => {
-                    const allTeamsData = data.slice(1);
-                    const teamsInState = allTeamsData.filter(team => {
+                    const allTeamsData = data.values.slice(1);
+                    let teamsInState = allTeamsData.filter(team => {
                         const teamState = team[8] ? team[8].toUpperCase() : '';
                         const stateCodeUpper = stateCode.toUpperCase();
-                        
                         return teamState === stateCodeUpper;
                     });
-                    teamsInState.sort((a, b) => {
-                        const cityA = a[8].toUpperCase();
-                        const cityB = b[8].toUpperCase();
-                        if (cityA < cityB) return -1;
-                        if (cityA > cityB) return 1;
-                        return 0;
-                    });
+
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
                         
+                        // Map Logic
                         const map = L.map('team-map');
                         const teamMarkers = L.featureGroup();
-
                         teamsInState.forEach(team => {
                             const lat = parseFloat(team[11]);
                             const lon = parseFloat(team[12]);
@@ -171,43 +191,87 @@
                                 teamMarkers.addLayer(marker);
                             }
                         });
-                        
                         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             maxZoom: 19,
                             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }).addTo(map);
-
                         teamMarkers.addTo(map);
-                        
                         map.fitBounds(teamMarkers.getBounds());
 
-                        const teamsListUl = document.querySelector('#teamsList ul');
-                        teamsListUl.innerHTML = '';
-                        teamsInState.forEach(team => {
-                            const li = document.createElement('li');
-                            const teamName = team[2];
-                            const teamCity = team[8];
-                            const teamUrl = team[10];
-                            const orgType = team[3];
-                            const link = document.createElement('a');
-                            link.href = teamUrl || '#';
-                            link.textContent = `${teamName} (${teamCity})`;
-                            li.appendChild(link);
-                            const typeP = document.createElement('p');
-                            typeP.textContent = `Type: ${orgType}`;
-                            li.appendChild(typeP);
-                            teamsListUl.appendChild(li);
+                        // Sort and render the table
+                        const renderTable = (teams) => {
+                            teamsTableBody.innerHTML = '';
+                            if (teams.length === 0) {
+                                teamsTableBody.innerHTML = '<tr><td colspan="9">No teams found for this state.</td></tr>';
+                                return;
+                            }
+                            teams.forEach(team => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td><a href="${team[10] || '#'}" target="_blank">${team[2]}</a></td>
+                                    <td>${team[8]}</td>
+                                    <td>${team[9]}</td>
+                                    <td>${team[4]}</td>
+                                    <td>${'No Data'}</td>
+                                    <td>${team[3]}</td>
+                                    <td>${team[5]}</td>
+                                    <td>${team[6]}</td>
+                                    <td>${'No Data'}</td>
+                                `;
+                                teamsTableBody.appendChild(row);
+                            });
+                        };
+                        
+                        // Initial sort
+                        teamsInState.sort((a, b) => {
+                            const zipA = a[9].toLowerCase();
+                            const zipB = b[9].toLowerCase();
+                            const nameA = a[2].toLowerCase();
+                            const nameB = b[2].toLowerCase();
+                            
+                            if (zipA === zipB) {
+                                return nameA.localeCompare(nameB);
+                            }
+                            return zipA.localeCompare(zipB);
                         });
+                        renderTable(teamsInState);
+
+                        // Add sorting to table headers
+                        document.querySelectorAll('th[data-sort-by]').forEach(header => {
+                            header.addEventListener('click', () => {
+                                const column = header.getAttribute('data-column');
+                                const sortIndex = header.getAttribute('data-sort-by');
+                                
+                                if (sortColumn === column) {
+                                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                                } else {
+                                    sortColumn = column;
+                                    sortDirection = 'asc';
+                                }
+
+                                teamsInState.sort((a, b) => {
+                                    const valueA = a[sortIndex].toLowerCase();
+                                    const valueB = b[sortIndex].toLowerCase();
+                                    
+                                    if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
+                                    if (valueA > valueB) return sortDirection === 'asc' ? 1 : -1;
+                                    return 0;
+                                });
+
+                                renderTable(teamsInState);
+                            });
+                        });
+
                     } else {
                         document.getElementById('stateNameHeading').textContent = `No Teams Found for ${stateCode.toUpperCase()}`;
-                        document.querySelector('#teamsList ul').innerHTML = `<li>No teams available for ${stateCode.toUpperCase()} yet.</li>`;
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching the teams data:', error);
                     document.getElementById('stateNameHeading').textContent = "Failed to load state teams.";
-                    document.querySelector('#teamsList ul').innerHTML = `<li>Error loading teams. Please try again later.</li>`;
+                    teamsTableBody.innerHTML = `<tr><td colspan="9">Error loading teams. Please try again later.</td></tr>`;
                 });
+
             function stateCodeToFullName(code) {
                 const states = {
                     'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'DC': 'District of Columbia', 'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland', 'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina', 'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont', 'VA': 'Virginia', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
