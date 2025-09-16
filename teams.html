@@ -155,7 +155,7 @@
 
         /* Styling for 100% SwimTopia teams/leagues */
         .st-highlight-text {
-            color: #0d47a0; /* CHANGED: Dark Blue */
+            color: #0d47a0; /* Dark green */
         }
         .st-normal-text {
             color: #666; /* Grey for normal text */
@@ -329,17 +329,17 @@
             };
 
             const is100SwimtopiaTeam = (team) => {
-                const is100ST = team['100% SwimTopia'];
-                const leagueName = team['League Name'];
-                return is100ST || swimtopiaLeagues.has(leagueName);
+                const is100ST = String(team['100% SwimTopia']).toLowerCase() === 'true';
+                const leagueID = team['Governing Org ID']; // CHANGED: Use Governing Org ID
+                return is100ST || swimtopiaLeagues.has(leagueID);
             };
             
             const createTeamIcon = (team) => {
-                const is100SwimTopia = is100SwimtopiaTeam(team);
+                const is100Swimtopia = is100SwimtopiaTeam(team);
                 const orgType = team['Organization Type'];
                 const leagueName = team['League Name'];
                 
-                let iconContent = is100SwimTopia ? '★' : '•';
+                let iconContent = is100Swimtopia ? '★' : '•';
                 
                 let markerColor;
                 if (leagueName) {
@@ -422,17 +422,14 @@
                     
                     const nameCellClass = is100ST ? 'st-highlight-text' : 'st-normal-text';
                     const leagueCellClass = is100ST ? 'st-highlight-text' : 'st-normal-text';
-                    const cityCellClass = is100ST ? 'st-highlight-text' : 'st-normal-text';
-                    const zipCellClass = is100ST ? 'st-highlight-text' : 'st-normal-text';
-                    const typeCellClass = is100ST ? 'st-highlight-text' : 'st-normal-text';
 
                     row.innerHTML = `
                         <td><a href="${team['Panel URL'] || '#'}" target="_blank" class="${nameCellClass}">${team.Name}</a></td>
-                        <td class="${cityCellClass}">${team.City}</td>
-                        <td class="${zipCellClass}">${team['Zip Code']}</td>
+                        <td class="${is100ST ? 'st-highlight-text' : 'st-normal-text'}">${team.City}</td>
+                        <td class="${is100ST ? 'st-highlight-text' : 'st-normal-text'}">${team['Zip Code']}</td>
                         <td class="${leagueCellClass}">${team['League Name']}</td>
                         <td>${is100ST ? 'Yes' : 'No'}</td>
-                        <td class="${typeCellClass}">${team['Organization Type']}</td>
+                        <td class="${is100ST ? 'st-highlight-text' : 'st-normal-text'}">${team['Organization Type']}</td>
                         <td>${team['Subscription Status']}</td>
                         <td>${isActive ? 'Yes' : 'No'}</td>
                         <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
@@ -491,8 +488,8 @@
                     
                     // Identify 100% SwimTopia leagues from the entire dataset
                     swimtopiaLeagues = new Set(allTeamsData
-                        .filter(team => team['100% SwimTopia'] === true && team['League Name'])
-                        .map(team => team['League Name'])
+                        .filter(team => String(team['100% SwimTopia']).toLowerCase() === 'true' && team['Governing Org ID'])
+                        .map(team => team['Governing Org ID'])
                     );
 
                     teamsInState = allTeamsData.filter(team => {
