@@ -60,6 +60,14 @@
             background-color: #2d7cbc;
             text-decoration: none;
         }
+
+        /* NEW: Flexbox container for map and key */
+        .map-and-key-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
         .map-container {
             height: 600px;
             position: relative;
@@ -67,11 +75,28 @@
             margin-bottom: 20px;
             border-radius: 8px;
             border: 1px solid #eee;
+            flex-grow: 1; /* NEW: Map takes up available space */
         }
         #team-map {
             height: 100%;
             width: 100%;
         }
+
+        /* NEW: Styling for the legend panel */
+        #mapLegend {
+            flex-basis: 250px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 15px;
+        }
+        #mapLegend h4 {
+            margin-top: 0;
+            color: #133b66;
+            font-family: Arial, sans-serif;
+        }
+
         .team-table-container {
             overflow-x: auto;
         }
@@ -97,7 +122,7 @@
         th:hover {
             background-color: #2d7cbc;
         }
-        th .header-content { /* NEW: Style for the inner flex container */
+        th .header-content {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -143,6 +168,43 @@
             margin-top: -15px;
             margin-bottom: 15px;
         }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .legend-color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .legend-shape {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .legend-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-list li {
+            margin: 0 10px 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .map-and-key-container {
+                flex-direction: column;
+            }
+            #mapLegend {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
     </style>
 </head>
 <body>
@@ -151,25 +213,41 @@
         <div class="navbar">
             <a href="index.html">Return to US Map</a>
         </div>
-        <h2>Map of Teams</h2>
-        <div id="stateMapContainer" class="map-container">
-            <div id="team-map"></div>
+
+        <div class="map-and-key-container">
+            <div id="mapLegend">
+                <h2>Map Key</h2>
+                <h4>100% SwimTopia Status</h4>
+                <ul class="legend-list">
+                    <li class="legend-item"><span class="legend-shape">★</span> 100% SwimTopia Team</li>
+                    <li class="legend-item"><span class="legend-shape">•</span> Not 100% SwimTopia</li>
+                </ul>
+                <h4>League/Organization Colors</h4>
+                <ul class="legend-list" id="colorLegendList">
+                    </ul>
+            </div>
+            
+            <h2>Map of Teams</h2>
+            <div id="stateMapContainer" class="map-container">
+                <div id="team-map"></div>
+            </div>
         </div>
+        
         <h2>Teams in This State</h2>
         <p class="sortable-hint">Click on a column header to sort the table.</p>
         <div id="teamTableContainer" class="team-table-container">
             <table>
                 <thead>
                     <tr>
-                        <th data-sort-by="Name">Name <span class="arrow">▲</span></th>
-                        <th data-sort-by="City">City <span class="arrow">▲</span></th>
-                        <th data-sort-by="Zip Code">Zip Code <span class="arrow">▲</span></th>
-                        <th data-sort-by="League Name">League <span class="arrow">▲</span></th>
-                        <th data-sort-by="100% SwimTopia">100% ST <span class="arrow">▲</span></th>
+                        <th data-sort-by="Name"><div class="header-content">Name <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="City"><div class="header-content">City <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Zip Code"><div class="header-content">Zip Code <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="League Name"><div class="header-content">League <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="100% SwimTopia"><div class="header-content">100% ST <span class="arrow">▲</span></div></th>
                         <th data-sort-by="Organization Type">Type <span class="arrow">▲</span></th>
-                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></th>
-                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></th>
-                        <th data-sort-by="USA-S Club">USA-S <span class="arrow">▲</span></th>
+                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="USA-S Club"><div class="header-content">USA-S <span class="arrow">▲</span></div></th>
                     </tr>
                 </thead>
                 <tbody id="teamsTableBody">
@@ -187,6 +265,7 @@
             const teamsJsonUrl = 'team_locations.json';
             const stateCode = getQueryParameter('state');
             const teamsTableBody = document.getElementById('teamsTableBody');
+            const colorLegendList = document.getElementById('colorLegendList');
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
             
@@ -295,6 +374,21 @@
                         map.fitBounds(teamMarkers.getBounds());
                         map.setZoom(map.getZoom() - 1);
 
+                        // NEW: Generate and populate the color legend
+                        const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
+                        colorLegendList.innerHTML = '';
+                        uniqueLeagueNames.forEach(name => {
+                            const li = document.createElement('li');
+                            li.className = 'legend-item';
+                            const colorBox = document.createElement('span');
+                            colorBox.className = 'legend-color-box';
+                            const color = name in orgTypeColors ? orgTypeColors[name] : getLeagueColor(name);
+                            colorBox.style.backgroundColor = color;
+                            li.appendChild(colorBox);
+                            li.appendChild(document.createTextNode(name));
+                            colorLegendList.appendChild(li);
+                        });
+
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
                             if (teams.length === 0) {
@@ -310,7 +404,7 @@
                                     <td>${team['League Name']}</td>
                                     <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status']}</td>
+                                    <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
