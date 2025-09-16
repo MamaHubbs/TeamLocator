@@ -32,8 +32,6 @@
             margin-bottom: 30px;
             font-size: 1.1em;
         }
-
-        /* SVG Map Container Styling */
         #us-map-object-container {
             width: 850px;
             height: auto;
@@ -46,8 +44,6 @@
             height: auto;
             display: block;
         }
-
-        /* 1. Base style for ALL paths (default, unvisited, not hovered) */
         #us-map-svg path {
             fill: #5c9ad5 !important;
             stroke: #fff !important;
@@ -55,19 +51,14 @@
             cursor: default;
             transition: fill 0.2s ease-in-out;
         }
-
-        /* 2. Style for states that HAVE teams (visited) - more specific than 'path' */
         #us-map-svg path.visited {
             fill: #133b66 !important;
             cursor: pointer !important;
         }
-
-        /* 3. Hover effect for ALL paths - this must come LAST to override base and visited fill */
         #us-map-svg path:hover {
             fill: #2d7cbc !important;
             cursor: pointer !important;
         }
-
         .map-note {
             text-align: center;
             font-size: 0.9em;
@@ -80,13 +71,11 @@
     <div class="container">
         <h1>Find Swim Teams Across the US!</h1>
         <p>Click on a state to view a list of teams.</p>
-
         <div id="us-map-object-container">
             <object id="usMapSvgObject" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
         </div>
         <p class="map-note">States are clickable if teams are located there.</p>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const usMapSvgObject = document.getElementById('usMapSvgObject');
@@ -94,7 +83,6 @@
             usMapSvgObject.addEventListener('load', function() {
                 try {
                     let usMapSvg = usMapSvgObject.contentDocument.getElementById('us-map-svg');
-
                     if (!usMapSvg) {
                         if (usMapSvgObject.contentDocument && usMapSvgObject.contentDocument.documentElement && usMapSvgObject.contentDocument.documentElement.tagName === 'svg') {
                             usMapSvg = usMapSvgObject.contentDocument.documentElement;
@@ -104,11 +92,9 @@
                             return;
                         }
                     }
-
                     if (usMapSvg) {
-                        const indexJsonUrl = 'team_locations.json';
-
-                        fetch(indexJsonUrl)
+                        const teamsJsonUrl = 'team_locations.json';
+                        fetch(teamsJsonUrl)
                             .then(response => {
                                 if (!response.ok) {
                                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -116,15 +102,14 @@
                                 return response.json();
                             })
                             .then(data => {
+                                // CORRECTED: Access the `values` array and slice it to remove the header.
                                 const allTeamsData = data.values ? data.values.slice(1) : [];
                                 const visitedStates = new Set();
-                                
                                 allTeamsData.forEach(team => {
                                     if (team[8]) {
                                         visitedStates.add(team[8].toUpperCase());
                                     }
                                 });
-
                                 const statePaths = usMapSvg.querySelectorAll('path');
                                 statePaths.forEach(path => {
                                     let stateCode = path.id ? path.id.toUpperCase() : null;
@@ -132,8 +117,6 @@
                                         stateCode = path.classList[0].toUpperCase();
                                         path.id = stateCode;
                                     }
-                                    
-                                    path.classList.add('state-path');
                                     if (stateCode && visitedStates.has(stateCode)) {
                                         path.classList.add('visited');
                                         path.addEventListener('click', function() {
@@ -152,7 +135,6 @@
                     console.error("Failed to access SVG content:", e);
                 }
             }, false);
-
             usMapSvgObject.addEventListener('error', function() {
                 console.error("Error loading SVG file via <object> tag. Check file path and existence.");
             });
