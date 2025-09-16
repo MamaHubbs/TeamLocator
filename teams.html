@@ -61,7 +61,7 @@
             text-decoration: none;
         }
         .map-container {
-            height: 400px;
+            height: 600px; /* CHANGED: Increased height to 600px */
             position: relative;
             margin-top: 15px;
             margin-bottom: 20px;
@@ -93,14 +93,12 @@
             cursor: pointer;
             position: sticky;
             top: 0;
-        }
-        th:hover {
-            background-color: #2d7cbc;
-        }
-        th .header-content { /* NEW: Style for the inner flex container */
             display: flex;
             align-items: center;
             justify-content: space-between;
+        }
+        th:hover {
+            background-color: #2d7cbc;
         }
         th span.arrow {
             margin-left: 5px;
@@ -161,15 +159,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th data-sort-by="Name"><div class="header-content">Name <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="City"><div class="header-content">City <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="Zip Code"><div class="header-content">Zip Code <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="League Name"><div class="header-content">League <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="100% SwimTopia"><div class="header-content">100% ST <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Name">Name <span class="arrow">▲</span></th>
+                        <th data-sort-by="City">City <span class="arrow">▲</span></th>
+                        <th data-sort-by="Zip Code">Zip Code <span class="arrow">▲</span></th>
+                        <th data-sort-by="League Name">League <span class="arrow">▲</span></th>
+                        <th data-sort-by="100% SwimTopia">100% ST <span class="arrow">▲</span></th>
                         <th data-sort-by="Organization Type">Type <span class="arrow">▲</span></th>
-                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></div></th>
-                        <th data-sort-by="USA-S Club">USA-S <span class="arrow">▲</span></div></th>
+                        <th data-sort-by="Subscription Status">Subscription <span class="arrow">▲</span></th>
+                        <th data-sort-by="Account Status">Active <span class="arrow">▲</span></th>
+                        <th data-sort-by="USA-S Club">USA-S <span class="arrow">▲</span></th>
                     </tr>
                 </thead>
                 <tbody id="teamsTableBody">
@@ -281,6 +279,7 @@
 
                         teamMarkers.addTo(map);
                         map.fitBounds(teamMarkers.getBounds());
+                        map.setZoom(map.getZoom() - 1); /* CHANGED: Zoom out one level from the default fit */
 
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
@@ -297,14 +296,14 @@
                                     <td>${team['League Name']}</td>
                                     <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status']}</td>
+                                    <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
                                 teamsTableBody.appendChild(row);
                             });
                         };
-
+                        
                         const headers = document.querySelectorAll('th[data-sort-by]');
                         
                         const applySort = () => {
@@ -346,7 +345,6 @@
                             });
                         });
                         
-                        // Initial sort
                         applySort();
 
                     } else {
