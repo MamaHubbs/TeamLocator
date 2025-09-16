@@ -206,7 +206,7 @@
                 box-sizing: border-box;
             }
         }
-        /* NEW: Search bar styling */
+        /* Search bar styling */
         .search-container {
             text-align: center;
             margin: 20px 0;
@@ -281,6 +281,7 @@
             const colorLegendList = document.getElementById('colorLegendList');
             const searchBar = document.getElementById('searchBar');
 
+            let map; // Define map in a scope accessible to updateMap
             let allTeamsData = [];
             let teamsInState = [];
             let sortColumn = 'Zip Code';
@@ -336,12 +337,22 @@
             };
 
             const updateMap = (teams) => {
-                const mapContainer = document.getElementById('team-map');
-                if (mapContainer._leaflet_id) {
-                    mapContainer._leaflet_id = null;
-                    map.remove(); // Remove the old map
+                // If map is already initialized, clear it
+                if (map) {
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker || layer instanceof L.TileLayer) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                } else {
+                    map = L.map('team-map'); // Initialize map if it doesn't exist
                 }
-                const map = L.map('team-map');
+                
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+
                 const teamMarkers = L.featureGroup();
                 teams.forEach(team => {
                     const lat = parseFloat(team.Latitude);
@@ -366,20 +377,16 @@
                     }
                 });
                 
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map);
-
                 teamMarkers.addTo(map);
+                
                 if (teams.length > 0) {
                     map.fitBounds(teamMarkers.getBounds());
                     map.setZoom(map.getZoom() - 1);
                 } else {
-                    map.setView([39.8283, -98.5795], 4); // Center of US if no teams
+                    map.setView([39.8283, -98.5795], 4);
                 }
             };
-
+            
             const renderTable = (teams) => {
                 teamsTableBody.innerHTML = '';
                 if (teams.length === 0) {
@@ -395,7 +402,7 @@
                         <td>${team['League Name']}</td>
                         <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                         <td>${team['Organization Type']}</td>
-                        <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                        <td>${team['Subscription Status']}</td>
                         <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                         <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                     `;
@@ -403,6 +410,8 @@
                 });
             };
 
+            const headers = document.querySelectorAll('th[data-sort-by]');
+            
             const applySortAndFilter = () => {
                 const searchTerm = searchBar.value.toLowerCase();
                 let filteredTeams = teamsInState.filter(team => {
@@ -455,8 +464,14 @@
                     if (teamsInState.length > 0) {
                         document.getElementById('stateNameHeading').textContent = `Teams in ${stateCodeToFullName(stateCode)}`;
                         
-                        updateMap(teamsInState);
+                        // Initialize map here once
+                        map = L.map('team-map');
                         
+                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        }).addTo(map);
+
                         const uniqueLeagueNames = [...new Set(teamsInState.map(team => team['League Name'] || team['Organization Type']))].filter(Boolean).sort();
                         colorLegendList.innerHTML = '';
                         uniqueLeagueNames.forEach(name => {
@@ -473,9 +488,6 @@
                             colorLegendList.appendChild(li);
                         });
 
-                        renderTable(teamsInState);
-                        
-                        const headers = document.querySelectorAll('th[data-sort-by]');
                         headers.forEach(header => {
                             header.addEventListener('click', () => {
                                 const column = header.getAttribute('data-sort-by');
@@ -490,10 +502,8 @@
                             });
                         });
                         
-                        // Initial sort
                         applySortAndFilter();
                         
-                        // NEW: Event listener for search bar
                         searchBar.addEventListener('input', applySortAndFilter);
 
                     } else {
