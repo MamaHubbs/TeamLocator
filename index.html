@@ -13,7 +13,7 @@
             color: #333;
         }
         .container {
-            max-width: 875px;
+            max-width: 100%; /* CHANGED: Set to 100% for full width */
             margin: auto;
             background: #fff;
             padding: 30px;
@@ -33,7 +33,7 @@
             font-size: 1.1em;
         }
         #us-map-object-container {
-            width: 850px;
+            width: 850px; /* You may want to adjust this for different screen sizes */
             height: auto;
             max-width: 100%;
             display: block;
@@ -102,7 +102,6 @@
                                 return response.json();
                             })
                             .then(data => {
-                                // CORRECTED: data is now an array of objects
                                 const allTeamsData = data || [];
                                 const visitedStates = new Set();
                                 allTeamsData.forEach(team => {
