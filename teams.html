@@ -181,6 +181,7 @@
             let sortColumn = 'Zip Code';
             let sortDirection = 'asc';
             
+            // Cache for league colors
             const leagueColors = {};
             const orgTypeColors = {
                 'Year Round Club Team': '#3498db',
@@ -223,7 +224,7 @@
 
                 return L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${team.Name} - ${team['League Name']}">${iconContent}</div>`,
+                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${team.Name} - ${team['League Name'] || 'No League'}">${iconContent}</div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12],
                     popupAnchor: [0, -12]
