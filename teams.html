@@ -228,9 +228,17 @@
                     markerColor = orgTypeColors[orgType] || orgTypeColors['Other'];
                 }
 
+                // NEW: Tooltip content for the hover effect
+                const tooltipContent = `
+                    <strong>Name:</strong> ${team.Name}<br>
+                    <strong>League:</strong> ${team['League Name'] || 'N/A'}<br>
+                    <strong>100% ST:</strong> ${team['100% SwimTopia'] ? 'Yes' : 'No'}<br>
+                    <strong>Type:</strong> ${team['Organization Type']}
+                `;
+
                 return L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${team.Name} - ${team['League Name'] || 'No League'}">${iconContent}</div>`,
+                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${tooltipContent}">${iconContent}</div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12],
                     popupAnchor: [0, -12]
@@ -267,7 +275,19 @@
                             if (!isNaN(lat) && !isNaN(lon)) {
                                 const customIcon = createTeamIcon(team);
                                 const marker = L.marker([lat, lon], {icon: customIcon});
-                                marker.bindPopup(`${team.Name}<br>Type: ${team['Organization Type']}`);
+                                marker.bindPopup(`
+                                    <h3>${team.Name}</h3>
+                                    <p><strong>City:</strong> ${team.City}</p>
+                                    <p><strong>State:</strong> ${team.State}</p>
+                                    <p><strong>Zip Code:</strong> ${team['Zip Code']}</p>
+                                    <p><strong>League:</strong> ${team['League Name'] || 'N/A'}</p>
+                                    <p><strong>100% SwimTopia:</strong> ${team['100% SwimTopia'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>Type:</strong> ${team['Organization Type']}</p>
+                                    <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
+                                    <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
+                                    <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
+                                `);
                                 teamMarkers.addLayer(marker);
                             }
                         });
@@ -279,7 +299,7 @@
 
                         teamMarkers.addTo(map);
                         map.fitBounds(teamMarkers.getBounds());
-                        map.setZoom(map.getZoom() - 1); /* CHANGED: Zoom out one level from the default fit */
+                        map.setZoom(map.getZoom() - 1);
 
                         const renderTable = (teams) => {
                             teamsTableBody.innerHTML = '';
@@ -296,7 +316,7 @@
                                     <td>${team['League Name']}</td>
                                     <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                                     <td>${team['Organization Type']}</td>
-                                    <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                                    <td>${team['Subscription Status']}</td>
                                     <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                                     <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                                 `;
