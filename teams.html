@@ -69,7 +69,7 @@
         }
 
         .map-container {
-            height: 800px; /* CHANGED: Increased height to 800px */
+            height: 800px;
             position: relative;
             margin-top: 15px;
             margin-bottom: 20px;
@@ -109,7 +109,7 @@
             margin-top: 15px;
         }
         th, td {
-            padding: 10px;
+            padding: 8px; /* CHANGED: Reduced padding */
             border-bottom: 1px solid #ddd;
             font-size: 0.9em;
             white-space: normal;
@@ -141,12 +141,18 @@
         th.desc span.arrow {
             transform: rotate(0deg);
         }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
+        
+        /* NEW: Styles for active and inactive rows */
+        .active-row {
+            background-color: #d4edda; /* Light green */
         }
-        tr:hover {
+        .inactive-row {
+            background-color: #f8f9fa; /* Light gray */
+        }
+        .active-row:hover, .inactive-row:hover {
             background-color: #e9e9e9;
         }
+
         .custom-marker {
             background-color: #3498db;
             width: 24px;
@@ -369,7 +375,7 @@
                             <p><strong>Type:</strong> ${team['Organization Type']}</p>
                             <p><strong>Subscription:</strong> ${team['Subscription Status']}</p>
                             <p><strong>Active:</strong> ${team['Account Status'] ? 'Yes' : 'No'}</p>
-                            <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}</p>
+                            <p><strong>USA-S Club:</strong> ${team['USA-S Club'] ? 'Yes' : 'No'}
                             <p><strong>Panel URL:</strong> <a href="${team['Panel URL']}" target="_blank">${team['Panel URL']}</a></p>
                         `);
                         teamMarkers.addLayer(marker);
@@ -403,7 +409,7 @@
                         <td>${team['League Name']}</td>
                         <td>${team['100% SwimTopia'] ? 'Yes' : 'No'}</td>
                         <td>${team['Organization Type']}</td>
-                        <td>${team['Subscription Status'] ? 'Yes' : 'No'}</td>
+                        <td>${team['Subscription Status']}</td>
                         <td>${team['Account Status'] ? 'Yes' : 'No'}</td>
                         <td>${team['USA-S Club'] ? 'Yes' : 'No'}</td>
                     `;
