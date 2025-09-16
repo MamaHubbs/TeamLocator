@@ -154,7 +154,7 @@
             background-color: #e9e9e9;
         }
 
-        /* NEW: Highlight for 100% SwimTopia teams */
+        /* Highlight for 100% SwimTopia teams */
         .highlight {
             font-weight: bold;
         }
@@ -330,7 +330,8 @@
                 const orgType = team['Organization Type'];
                 const leagueName = team['League Name'];
                 
-                let iconContent = is100SwimTopia ? '★' : '•';
+                const is100League = teamsInState.some(t => t['League Name'] === leagueName && t['100% SwimTopia']);
+                let iconContent = (is100SwimTopia || is100League) ? '★' : '•';
                 
                 let markerColor;
                 if (leagueName) {
@@ -341,7 +342,7 @@
 
                 return L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${is100SwimTopia ? 'star' : ''}" title="${team.Name} - ${team['League Name'] || 'No League'}">${iconContent}</div>`,
+                    html: `<div style="background-color: ${markerColor};" class="custom-marker ${iconContent === '★' ? 'star' : ''}" title="${team.Name} - ${team['League Name'] || 'No League'}">${iconContent}</div>`,
                     iconSize: [24, 24],
                     iconAnchor: [12, 12],
                     popupAnchor: [0, -12]
@@ -408,18 +409,19 @@
                     const row = document.createElement('tr');
                     const isActive = team['Account Status'];
                     const is100ST = team['100% SwimTopia'];
+                    const is100League = allTeamsData.some(t => t['League Name'] === team['League Name'] && t['100% SwimTopia']);
                     
                     row.className = isActive ? 'active-row' : 'inactive-row';
                     
-                    const nameCellClass = is100ST ? 'highlight' : '';
-                    const leagueCellClass = is100ST ? 'highlight' : '';
+                    const nameCellClass = (is100ST || is100League) ? 'highlight' : '';
+                    const leagueCellClass = (is100ST || is100League) ? 'highlight' : '';
 
                     row.innerHTML = `
                         <td><a href="${team['Panel URL'] || '#'}" target="_blank" class="${nameCellClass}">${team.Name}</a></td>
                         <td>${team.City}</td>
                         <td>${team['Zip Code']}</td>
                         <td class="${leagueCellClass}">${team['League Name']}</td>
-                        <td>${is100ST ? 'Yes' : 'No'}</td>
+                        <td>${(is100ST || is100League) ? 'Yes' : 'No'}</td>
                         <td>${team['Organization Type']}</td>
                         <td>${team['Subscription Status']}</td>
                         <td>${isActive ? 'Yes' : 'No'}</td>
